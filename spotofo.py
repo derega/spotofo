@@ -36,6 +36,7 @@ def get_all_tracks_from_playlist(config, playlist):
 
 def add_tracks_to_playlist(config, tracks):
   playlist = get_playlist(config)
+  if not playlist: return
   username, playlist_id = _split_playlist(playlist)
   sp = spotify_client(config, username)
   if sp:
@@ -47,11 +48,19 @@ def add_tracks_to_playlist(config, tracks):
       sp.user_playlist_add_tracks(username, playlist, to_be_added, position=0)
 
 
+def get_user_devices(config, username):
+  devices = []
+  sp = spotify_client(config, username)
+  if sp:
+    r = sp._get('me/player/devices')
+    devices = r['devices']
+  return devices
+
+
 def get_currently_playing_trackinfo(config, usernames):
   for username in usernames:
-    token_info = get_token_info(config, username)
-    if token_info:
-      sp = spotipy.Spotify(token_info['access_token'])
+    sp = spotify_client(config, username)
+    if sp:
       r = sp._get('me/player')
       track = r['item']
       album = track['album']
@@ -83,11 +92,13 @@ def save_config(config):
     f.write(json.dumps(config))
 
 
-def add_user(config, username):
+def add_user_device(config, username, device):
   if not 'users' in config:
-    config['users'] = []
+    config['users'] = {}
   if not username in config['users']:
-    config['users'].append(username)
+    config['users'][username] = {'username': username, 'devices': [device]}
+  if not device in config['users'][username]['devices']:
+    config['users'][username]['devices'].append(device)
 
 
 def get_users(config):
@@ -95,6 +106,22 @@ def get_users(config):
   if 'users' in config:
     users = config['users']
   return users
+
+
+def is_authorized_device(config, username, device):
+  if 'users' in config:
+    for user in config['users']:
+      if device in config['users'][user]['devices']:
+        return True
+  return False
+
+
+def get_devices(config, username):
+  users = get_users(config)
+  devices = []
+  if username in users:
+    devices = users[username]['devices']
+  return devices
 
 
 def save_playlist(config, username, playlist):
@@ -203,7 +230,7 @@ def cli(ctx, cfn):
 @click.pass_context
 def currently_playing(ctx):
   for trackinfo in get_currently_playing_trackinfo(ctx.obj, get_users(ctx.obj)):
-    print repr(trackinfo[1:])
+    print trackinfo[0]['device']['id'], repr(trackinfo[1:])
 
 
 def add_track_to_playlist(config, track, playlist):
@@ -214,8 +241,11 @@ def add_track_to_playlist(config, track, playlist):
 def update_shared_playlist(ctx):
   tracks = []
   for trackinfo in get_currently_playing_trackinfo(ctx.obj, get_users(ctx.obj)):
-    uri = trackinfo[0]['item']['uri']
-    tracks.append(uri)
+    username = trackinfo[1]
+    device = trackinfo[0]['device']['id']
+    if is_authorized_device(ctx.obj, username, device):
+      uri = trackinfo[0]['item']['uri']
+      tracks.append(uri)
   add_tracks_to_playlist(ctx.obj, tracks)
 
 
@@ -226,11 +256,39 @@ def authorize(ctx, username):
   state, data = _oauth_authorize(ctx.obj, username, scope=DEFAULT_SCOPE)
   if state == 'token' and data:
     save_token_info(ctx.obj, username, data)
-    add_user(ctx.obj, username)
-    save_config(ctx.obj)
-    print 'Authorized to query data from user', username
+    devices = get_user_devices(ctx.obj, username)
+    device_ids = []
+    for device in devices:
+      print device['type'], repr(device['name']), 'ID:', device['id']
+      device_ids.append(device['id'])
+    device = raw_input('Enter the device ID you want to authorize: ')
+    if device in device_ids:
+#      device = 'e54545c393e5580b0ad5af601b8d9d77dc17f62d' # user selects
+      add_user_device(ctx.obj, username, device)
+      save_config(ctx.obj)
+      print 'Authorized to query data from user', username, 'device', device
+    else:
+      print "Can't authorize device", device
   else:
     print "Can't get token for", username
+
+
+@cli.command()
+@click.argument('username')
+@click.pass_context
+def devices(ctx, username):
+  devices = get_user_devices(ctx.obj, username)
+  for device in devices:
+    print device['type'], repr(device['name']), 'ID:', device['id']
+
+
+@cli.command()
+@click.pass_context
+def authorized(ctx):
+  print 'Authorized to query data from user / device:'
+  for username in get_users(ctx.obj):
+    for device in get_devices(ctx.obj, username):
+      print username, '/', device
 
 
 @cli.command()
