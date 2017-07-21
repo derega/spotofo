@@ -7,16 +7,17 @@ Do fun things with Spotify.
 Installation
 ============
 
-Copy `config.json` and fill in the blanks.
-
 Create virtualenv and install our stuff::
 
   $ virtualenv venv
   $ . venv/bin/activate
   $ pip install --editable .
 
-Run the script::
+Do fun things::
 
-  $ spotofo -c yourconfig.json
+  $ spotofo authorize username
+  $ spotofo currently_playing
 
+By default the script uses ~/.spotofo.conf to store its config.
+Run authorize once and then fill in the blanks in the config file.
 

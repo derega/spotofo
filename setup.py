@@ -11,6 +11,6 @@ setup(
     ],
     entry_points='''
         [console_scripts]
-        spotofo=spotofo:main
+        spotofo=spotofo:cli
     ''',
 )
