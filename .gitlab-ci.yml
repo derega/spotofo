@@ -1,0 +1,7 @@
+image: python:2
+
+test:
+  script:
+    - pip install --editable .
+    - spotofo -c config.json
+
