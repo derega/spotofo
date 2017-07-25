@@ -13,6 +13,10 @@ Create virtualenv and install our stuff::
   $ . venv/bin/activate
   $ pip install --editable .
 
+If you want to use the MQTT stuff you need to install the package with::
+
+  $ pip install --editable ".[mqtt]"
+
 Do fun things::
 
   $ spotofo authorize_user <username>

@@ -26,9 +26,7 @@ def add_track(ctx, track):
   spotofo.add_tracks_to_playlist(ctx.obj, to_be_added_tracks)
 
 
-@cli.command()
-@click.pass_context
-def update_shared_playlist(ctx):
+def _update_shared_playlist(ctx):
   tracks = []
   for ti in spotofo.get_currently_playing_trackinfo(ctx.obj, spotofo.get_users(ctx.obj)):
     if spotofo.is_authorized_device(ctx.obj, ti.username, ti.device):
@@ -36,8 +34,47 @@ def update_shared_playlist(ctx):
   track_uris = map(lambda x: x.uri, tracks)
   to_be_added_tracks = spotofo.deduplicate_tracks(ctx.obj, track_uris)
   spotofo.add_tracks_to_playlist(ctx.obj, to_be_added_tracks)
+  return (tracks, track_uris, to_be_added_tracks)
+
+
+@cli.command()
+@click.pass_context
+def update_shared_playlist(ctx):
+  tracks, track_uris, to_be_added_tracks = _update_shared_playlist(ctx)
   for ti in tracks:
     print ti, ti.uri in to_be_added_tracks
+
+
+@cli.command()
+@click.pass_context
+@click.argument('host')
+@click.argument('port')
+@click.option('--topic', 'topic', help='Topic to subscribe', default='spotofo')
+def mqtt(ctx, host, port, topic):
+  try:
+    from paho.mqtt.publish import single
+  except ImportError:
+    print 'Install paho-mqtt'
+    return
+  import json
+  tracks, track_uris, to_be_added_tracks = _update_shared_playlist(ctx)
+  data = [x for x in tracks if x.uri in to_be_added_tracks]
+  kwargs = {
+    'payload': json.dumps(data),
+    'qos': 0,
+    'retain': False,
+    'hostname': host,
+    'port': int(port),
+    'client_id': None,
+    'keepalive': 60,
+    'will': None,
+    'auth': None,
+    'tls': None,
+    'transport': 'tcp',
+    }
+  print repr(kwargs)
+  if len(data):
+    single(topic, **kwargs)
 
 
 @cli.command()

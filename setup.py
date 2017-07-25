@@ -9,8 +9,12 @@ setup(
         'Click==6.7',
         'spotipy==2.4.4',
     ],
-    entry_points='''
-        [console_scripts]
-        spotofo=spotofocli:cli
-    ''',
+    extras_require={
+        'mqtt': ['paho-mqtt==1.3.0'],
+    },
+    entry_points={
+        'console_scripts': [
+            'spotofo=spotofocli:cli',
+        ],
+    },
 )
