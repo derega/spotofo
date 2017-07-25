@@ -4,6 +4,7 @@ import sys
 import re
 import json
 import codecs
+from collections import namedtuple
 
 import click
 import spotipy
@@ -17,6 +18,8 @@ def _pd(d):
 
 
 ### Spotify data handling functions
+
+TrackInfo = namedtuple('TrackInfo', ('username', 'track', 'album', 'artist', 'uri', 'device'))
 
 def get_all_tracks_from_playlist(config, playlist):
   username, playlist_id = _split_playlist(playlist)
@@ -34,18 +37,27 @@ def get_all_tracks_from_playlist(config, playlist):
   return tracks
 
 
-def add_tracks_to_playlist(config, tracks):
+def deduplicate_tracks(config, tracks):
+  to_be_added = set()
   playlist = get_playlist(config)
-  if not playlist: return
-  username, playlist_id = _split_playlist(playlist)
-  sp = spotify_client(config, username)
-  if sp:
-    tracks_in_playlist = get_all_tracks_from_playlist(config, playlist)
-    existing = map(lambda x: x['uri'], tracks_in_playlist)
-    to_be_added = set(tracks) - set(existing)
-    if len(to_be_added) > 0:
-      print repr(playlist), repr(to_be_added)
-      sp.user_playlist_add_tracks(username, playlist, to_be_added, position=0)
+  if playlist:
+    username, playlist_id = _split_playlist(playlist)
+    sp = spotify_client(config, username)
+    if sp:
+      tracks_in_playlist = get_all_tracks_from_playlist(config, playlist)
+      existing = map(lambda x: x['uri'], tracks_in_playlist)
+      to_be_added = set(tracks) - set(existing)
+  return to_be_added
+
+
+def add_tracks_to_playlist(config, tracks):
+  if len(tracks) > 0:
+    playlist = get_playlist(config)
+    if playlist:
+      username, playlist_id = _split_playlist(playlist)
+      sp = spotify_client(config, username)
+      if sp:
+        sp.user_playlist_add_tracks(username, playlist, tracks, position=0)
 
 
 def get_user_devices(config, username):
@@ -61,11 +73,20 @@ def get_currently_playing_trackinfo(config, usernames):
   for username in usernames:
     sp = spotify_client(config, username)
     if sp:
-      r = sp._get('me/player')
-      track = r['item']
-      album = track['album']
-      artist = track['artists'][0]
-      yield (r, username, track['name'], album['name'], artist['name'])
+      try:
+        r = sp._get('me/player')
+        track = r['item']
+        data = {
+          'username': username,
+          'track': track['name'],
+          'album': track['album']['name'],
+          'artist': track['artists'][0]['name'],
+          'uri': track['uri'],
+          'device': r['device']['id'],
+          }
+        yield TrackInfo(**data)
+      except Exception, e:
+        print repr(e)
 
 
 ### Config and data handling functions
@@ -155,34 +176,36 @@ def get_token_info(config, username):
   Refreshes the token if it has been expired.
   Saves the token to config when refreshing.
   """
-  client = oauth_client(config, username)
+  client = oauth_client(config)
+  token_info = None
   if username in config['token_info']:
-    client.token_info = config['token_info'][username]
-    stored_token = client.token_info['access_token']
-    queried_token = client.get_access_token()
-    if stored_token != queried_token:
-      save_token_info(config, username, client.token_info)
+    token_info = config['token_info'][username]
+    if client.is_token_expired(token_info):
+      token_info = client.refresh_access_token(token_info['refresh_token'])
+      save_token_info(config, username, token_info)
       save_config(config)
-  return client.token_info
+  return token_info
 
 
 def spotify_client(config, username):
-  token_info = get_token_info(config, username)
   sp = None
+  token_info = get_token_info(config, username)
   if token_info:
-    sp = spotipy.Spotify(token_info['access_token'])
+    sp = spotipy.Spotify(auth=token_info['access_token'], requests_timeout=10)
   return sp
 
 
 ### oAuth functions
 
-def oauth_client(config, username):
+def oauth_client(config, scope=None):
   import spotipy.oauth2
   kwargs = {
+    'scope': scope,
     'client_id': config['client_id'],
     'client_secret': config['client_secret'],
+    'redirect_uri': config['redirect_uri'],
     }
-  sp_oauth = spotipy.oauth2.SpotifyClientCredentials(**kwargs)
+  sp_oauth = spotipy.oauth2.SpotifyOAuth(**kwargs)
   return sp_oauth
 
 
@@ -192,14 +215,8 @@ def authorize_with_scope(config, username, scope=None, response=None):
   First call without response argument.
   Then call again with the URL you got from Spotify as the response argument.
   """
-  import spotipy.oauth2
-  kwargs = {
-    'scope': scope or DEFAULT_SCOPE,
-    'client_id': config['client_id'],
-    'client_secret': config['client_secret'],
-    'redirect_uri': config['redirect_uri'],
-    }
-  sp_oauth = spotipy.oauth2.SpotifyOAuth(**kwargs)
+  scope = scope or DEFAULT_SCOPE
+  sp_oauth = oauth_client(config, scope=scope)
   if response:
     code = sp_oauth.parse_response_code(response)
     token_info = sp_oauth.get_access_token(code)
@@ -230,23 +247,29 @@ def cli(ctx, cfn):
 @click.pass_context
 def currently_playing(ctx):
   for trackinfo in get_currently_playing_trackinfo(ctx.obj, get_users(ctx.obj)):
-    print trackinfo[0]['device']['id'], repr(trackinfo[1:])
+    print trackinfo
 
 
-def add_track_to_playlist(config, track, playlist):
-  print track, playlist
+@cli.command()
+@click.pass_context
+@click.argument('track')
+def add_track(ctx, track):
+  to_be_added_tracks = deduplicate_tracks(ctx.obj, [track])
+  add_tracks_to_playlist(ctx.obj, to_be_added_tracks)
+
 
 @cli.command()
 @click.pass_context
 def update_shared_playlist(ctx):
   tracks = []
-  for trackinfo in get_currently_playing_trackinfo(ctx.obj, get_users(ctx.obj)):
-    username = trackinfo[1]
-    device = trackinfo[0]['device']['id']
-    if is_authorized_device(ctx.obj, username, device):
-      uri = trackinfo[0]['item']['uri']
-      tracks.append(uri)
-  add_tracks_to_playlist(ctx.obj, tracks)
+  for ti in get_currently_playing_trackinfo(ctx.obj, get_users(ctx.obj)):
+    if is_authorized_device(ctx.obj, ti.username, ti.device):
+      tracks.append(ti)
+  track_uris = map(lambda x: x.uri, tracks)
+  to_be_added_tracks = deduplicate_tracks(ctx.obj, track_uris)
+  add_tracks_to_playlist(ctx.obj, to_be_added_tracks)
+  for ti in tracks:
+    print ti, ti.uri in to_be_added_tracks
 
 
 @cli.command()
@@ -263,7 +286,6 @@ def authorize(ctx, username):
       device_ids.append(device['id'])
     device = raw_input('Enter the device ID you want to authorize: ')
     if device in device_ids:
-#      device = 'e54545c393e5580b0ad5af601b8d9d77dc17f62d' # user selects
       add_user_device(ctx.obj, username, device)
       save_config(ctx.obj)
       print 'Authorized to query data from user', username, 'device', device
