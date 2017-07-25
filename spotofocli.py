@@ -50,7 +50,9 @@ def update_shared_playlist(ctx):
 @click.argument('host')
 @click.argument('port')
 @click.option('--topic', 'topic', help='Topic to subscribe', default='spotofo')
-def mqtt(ctx, host, port, topic):
+@click.option('--username', 'username', default=None)
+@click.option('--password', 'password', default=None)
+def mqtt(ctx, host, port, topic, username, password):
   try:
     from paho.mqtt.publish import single
   except ImportError:
@@ -59,6 +61,9 @@ def mqtt(ctx, host, port, topic):
   import json
   tracks, track_uris, to_be_added_tracks = _update_shared_playlist(ctx)
   data = [x for x in tracks if x.uri in to_be_added_tracks]
+  auth = None
+  if username and password:
+    auth = {'username': username, 'password': password}
   kwargs = {
     'payload': json.dumps(data),
     'qos': 0,
@@ -68,13 +73,41 @@ def mqtt(ctx, host, port, topic):
     'client_id': None,
     'keepalive': 60,
     'will': None,
-    'auth': None,
+    'auth': auth,
     'tls': None,
     'transport': 'tcp',
     }
   print repr(kwargs)
   if len(data):
     single(topic, **kwargs)
+
+
+@cli.command()
+@click.pass_context
+@click.argument('host')
+@click.argument('port')
+@click.option('--topic', 'topic', help='Topic to subscribe', default='spotofo')
+@click.option('--username', 'username', default=None)
+@click.option('--password', 'password', default=None)
+def mqttclient(ctx, host, port, topic, username, password):
+  """This can be used to see what messages are sent to the topic"""
+  import paho.mqtt.client as mqtt
+  import json
+  def on_connect(client, userdata, flags, rc):
+    if rc == 0:
+      client.subscribe(topic)
+      print 'Subscribed:', repr(topic)
+    else:
+      print mqtt.error_string(rc)
+  def on_message(client, userdata, msg):
+    print(msg.topic+' '+repr(msg.payload))
+  client = mqtt.Client()
+  client.on_connect = on_connect
+  client.on_message = on_message
+  if username and password:
+    client.username_pw_set(username, password)
+  client.connect(host, int(port), 60)
+  client.loop_forever()
 
 
 @cli.command()
