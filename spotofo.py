@@ -22,7 +22,7 @@ def _pd(d):
 TrackInfo = namedtuple('TrackInfo', ('username', 'track', 'album', 'artist', 'uri', 'device'))
 
 def get_all_tracks_from_playlist(config, playlist):
-  username, playlist_id = _split_playlist(playlist)
+  username, playlist_id = split_playlist(playlist)
   sp = spotify_client(config, username)
   if not sp: return set()
   tracks = []
@@ -41,7 +41,7 @@ def deduplicate_tracks(config, tracks):
   to_be_added = set()
   playlist = get_playlist(config)
   if playlist:
-    username, playlist_id = _split_playlist(playlist)
+    username, playlist_id = split_playlist(playlist)
     sp = spotify_client(config, username)
     if sp:
       tracks_in_playlist = get_all_tracks_from_playlist(config, playlist)
@@ -54,7 +54,7 @@ def add_tracks_to_playlist(config, tracks):
   if len(tracks) > 0:
     playlist = get_playlist(config)
     if playlist:
-      username, playlist_id = _split_playlist(playlist)
+      username, playlist_id = split_playlist(playlist)
       sp = spotify_client(config, username)
       if sp:
         sp.user_playlist_add_tracks(username, playlist, tracks, position=0)
@@ -148,7 +148,7 @@ def save_playlist(config, username, playlist):
   config['playlist'] = 'spotify:user:%s:playlist:%s'%(username, playlist)
 
 
-def _split_playlist(target):
+def split_playlist(target):
   m = re.match('spotify:user:([^:]*):playlist:(.*)', target)
   if not m:
     return (None, None)
@@ -224,113 +224,4 @@ def authorize_with_scope(config, username, scope=None, response=None):
     auth_url = sp_oauth.get_authorize_url()
     return ('auth_url', auth_url)
 
-
-def _oauth_authorize(config, username, scope=None, response=None):
-  state, data = authorize_with_scope(config, username, scope=scope)
-  print('Please navigate here: %s' % data)
-  response = raw_input('Enter the URL you were redirected to: ')
-  state, data = authorize_with_scope(config, username, scope=scope, response=response)
-  return state, data
-
-
-### The CLI :)
-
-@click.group()
-@click.option('-c', 'cfn', help='Config file', default=os.path.expanduser('~/.spotofo.conf'))
-@click.pass_context
-def cli(ctx, cfn):
-  ctx.obj = get_config(cfn)
-
-
-@cli.command()
-@click.pass_context
-def currently_playing(ctx):
-  for trackinfo in get_currently_playing_trackinfo(ctx.obj, get_users(ctx.obj)):
-    print trackinfo
-
-
-@cli.command()
-@click.pass_context
-@click.argument('track')
-def add_track(ctx, track):
-  to_be_added_tracks = deduplicate_tracks(ctx.obj, [track])
-  add_tracks_to_playlist(ctx.obj, to_be_added_tracks)
-
-
-@cli.command()
-@click.pass_context
-def update_shared_playlist(ctx):
-  tracks = []
-  for ti in get_currently_playing_trackinfo(ctx.obj, get_users(ctx.obj)):
-    if is_authorized_device(ctx.obj, ti.username, ti.device):
-      tracks.append(ti)
-  track_uris = map(lambda x: x.uri, tracks)
-  to_be_added_tracks = deduplicate_tracks(ctx.obj, track_uris)
-  add_tracks_to_playlist(ctx.obj, to_be_added_tracks)
-  for ti in tracks:
-    print ti, ti.uri in to_be_added_tracks
-
-
-@cli.command()
-@click.argument('username')
-@click.pass_context
-def authorize(ctx, username):
-  state, data = _oauth_authorize(ctx.obj, username, scope=DEFAULT_SCOPE)
-  if state == 'token' and data:
-    save_token_info(ctx.obj, username, data)
-    devices = get_user_devices(ctx.obj, username)
-    device_ids = []
-    for device in devices:
-      print device['type'], repr(device['name']), 'ID:', device['id']
-      device_ids.append(device['id'])
-    device = raw_input('Enter the device ID you want to authorize: ')
-    if device in device_ids:
-      add_user_device(ctx.obj, username, device)
-      save_config(ctx.obj)
-      print 'Authorized to query data from user', username, 'device', device
-    else:
-      print "Can't authorize device", device
-  else:
-    print "Can't get token for", username
-
-
-@cli.command()
-@click.argument('username')
-@click.pass_context
-def devices(ctx, username):
-  devices = get_user_devices(ctx.obj, username)
-  for device in devices:
-    print device['type'], repr(device['name']), 'ID:', device['id']
-
-
-@cli.command()
-@click.pass_context
-def authorized(ctx):
-  print 'Authorized to query data from user / device:'
-  for username in get_users(ctx.obj):
-    for device in get_devices(ctx.obj, username):
-      print username, '/', device
-
-
-@cli.command()
-@click.argument('target')
-@click.pass_context
-def playlist(ctx, target):
-  username, playlist = _split_playlist(target)
-  if not username:
-    print 'Unable to handle playlist'
-    return
-  scope = 'playlist-modify-private'
-  state, data = _oauth_authorize(ctx.obj, username, scope=scope)
-  if state == 'token' and data:
-    save_token_info(ctx.obj, username, data)
-    save_playlist(ctx.obj, username, playlist)
-    save_config(ctx.obj)
-    print 'Authorized to change playlist', target
-  else:
-    print "Can't get token for", username
-
-
-if __name__ == '__main__':
-  cli()
 
