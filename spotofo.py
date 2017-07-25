@@ -130,10 +130,9 @@ def get_users(config):
 
 
 def is_authorized_device(config, username, device):
-  if 'users' in config:
-    for user in config['users']:
-      if device in config['users'][user]['devices']:
-        return True
+  for user in config['users']:
+    if device in config['users'][user]['devices']:
+      return True
   return False
 
 
