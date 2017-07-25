@@ -1,12 +1,9 @@
 
-import os
-import sys
 import re
 import json
 import codecs
 from collections import namedtuple
 
-import click
 import spotipy
 
 

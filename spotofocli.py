@@ -1,14 +1,6 @@
 
 import os
-import sys
-import re
-import json
-import codecs
-from collections import namedtuple
-
 import click
-import spotipy
-
 import spotofo
 
 
@@ -31,7 +23,7 @@ def currently_playing(ctx):
 @click.argument('track')
 def add_track(ctx, track):
   to_be_added_tracks = spotofo.deduplicate_tracks(ctx.obj, [track])
-  add_tracks_to_playlist(ctx.obj, to_be_added_tracks)
+  spotofo.add_tracks_to_playlist(ctx.obj, to_be_added_tracks)
 
 
 @cli.command()
