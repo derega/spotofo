@@ -51,7 +51,25 @@ def update_shared_playlist(ctx):
 @cli.command()
 @click.argument('username')
 @click.pass_context
-def authorize(ctx, username):
+def devices(ctx, username):
+  devices = spotofo.get_user_devices(ctx.obj, username)
+  for device in devices:
+    print device['type'], repr(device['name']), 'ID:', device['id']
+
+
+@cli.command()
+@click.pass_context
+def authorized(ctx):
+  print 'Authorized to query data from user / device:'
+  for username in spotofo.get_users(ctx.obj):
+    for device in spotofo.get_devices(ctx.obj, username):
+      print username, '/', device
+
+
+@cli.command()
+@click.argument('username')
+@click.pass_context
+def authorize_user(ctx, username):
   state, data = _oauth_authorize(ctx.obj, username, scope=spotofo.DEFAULT_SCOPE)
   if state == 'token' and data:
     spotofo.save_token_info(ctx.obj, username, data)
@@ -72,27 +90,9 @@ def authorize(ctx, username):
 
 
 @cli.command()
-@click.argument('username')
-@click.pass_context
-def devices(ctx, username):
-  devices = spotofo.get_user_devices(ctx.obj, username)
-  for device in devices:
-    print device['type'], repr(device['name']), 'ID:', device['id']
-
-
-@cli.command()
-@click.pass_context
-def authorized(ctx):
-  print 'Authorized to query data from user / device:'
-  for username in spotofo.get_users(ctx.obj):
-    for device in spotofo.get_devices(ctx.obj, username):
-      print username, '/', device
-
-
-@cli.command()
 @click.argument('target')
 @click.pass_context
-def playlist(ctx, target):
+def authorize_playlist(ctx, target):
   username, playlist = spotofo.split_playlist(target)
   if not username:
     print 'Unable to handle playlist'
