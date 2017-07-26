@@ -1,5 +1,6 @@
 
 import os
+import json
 import click
 import spotofo
 
@@ -37,6 +38,31 @@ def _update_shared_playlist(ctx):
   return (tracks, track_uris, to_be_added_tracks)
 
 
+def _mqtt_single(payload, host, port, topic, username=None, password=None):
+  try:
+    from paho.mqtt.publish import single
+  except ImportError:
+    print 'Install paho-mqtt'
+    return
+  auth = None
+  if username and password:
+    auth = {'username': username, 'password': password}
+  kwargs = {
+    'payload': payload,
+    'qos': 0,
+    'retain': False,
+    'hostname': host,
+    'port': int(port),
+    'client_id': None,
+    'keepalive': 60,
+    'will': None,
+    'auth': auth,
+    'tls': None,
+    'transport': 'tcp',
+    }
+  single(topic, **kwargs)
+
+
 @cli.command()
 @click.pass_context
 def update_shared_playlist(ctx):
@@ -53,33 +79,26 @@ def update_shared_playlist(ctx):
 @click.option('--username', 'username', default=None)
 @click.option('--password', 'password', default=None)
 def mqtt(ctx, host, port, topic, username, password):
-  try:
-    from paho.mqtt.publish import single
-  except ImportError:
-    print 'Install paho-mqtt'
-    return
-  import json
   tracks, track_uris, to_be_added_tracks = _update_shared_playlist(ctx)
   data = [x for x in tracks if x.uri in to_be_added_tracks]
-  auth = None
-  if username and password:
-    auth = {'username': username, 'password': password}
-  kwargs = {
-    'payload': json.dumps(data),
-    'qos': 0,
-    'retain': False,
-    'hostname': host,
-    'port': int(port),
-    'client_id': None,
-    'keepalive': 60,
-    'will': None,
-    'auth': auth,
-    'tls': None,
-    'transport': 'tcp',
-    }
-  print repr(kwargs)
+  for ti in tracks:
+    print ti
   if len(data):
-    single(topic, **kwargs)
+    print repr(kwargs)
+    _mqtt_single(json.dumps(data), host, port, topic, username, password)
+
+
+@cli.command()
+@click.pass_context
+@click.argument('host')
+@click.argument('port')
+@click.argument('msg')
+@click.option('--topic', 'topic', help='Topic to subscribe', default='spotofo')
+@click.option('--username', 'username', default=None)
+@click.option('--password', 'password', default=None)
+def mqttsend(ctx, host, port, msg, topic, username, password):
+  """Send message to MQTT topic"""
+  _mqtt_single(msg, host, port, topic, username, password)
 
 
 @cli.command()
@@ -91,7 +110,11 @@ def mqtt(ctx, host, port, topic, username, password):
 @click.option('--password', 'password', default=None)
 def mqttclient(ctx, host, port, topic, username, password):
   """This can be used to see what messages are sent to the topic"""
-  import paho.mqtt.client as mqtt
+  try:
+    import paho.mqtt.client as mqtt
+  except ImportError:
+    print 'Install paho-mqtt'
+    return
   import json
   def on_connect(client, userdata, flags, rc):
     if rc == 0:
