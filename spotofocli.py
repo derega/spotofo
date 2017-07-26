@@ -15,115 +15,88 @@ def cli(ctx, cfn):
 @cli.command()
 @click.pass_context
 def currently_playing(ctx):
+  """Currently playing tracks for all users"""
   for trackinfo in spotofo.get_currently_playing_trackinfo(ctx.obj, spotofo.get_users(ctx.obj)):
     print trackinfo
 
 
 @cli.command()
 @click.pass_context
+@click.option('--topic', help='Topic to subscribe', default=None)
+def update_playlist(ctx, topic):
+  """Add currently playing tracks to the playlist
+
+  Only add tracks which are not yet in the playlist.
+  Only add tracks playing in authorized devices.
+  Send information about added tracks to MQTT topic if configured.
+  """
+  tracks, track_uris, added_tracks = _update_shared_playlist(ctx)
+  data = [x for x in tracks if x.uri in added_tracks]
+  for ti in tracks:
+    print ti
+  if len(data):
+    spotofo.mqtt_single(ctx.obj, json.dumps(data), topic)
+
+
+@cli.command()
+@click.pass_context
 @click.argument('track')
 def add_track(ctx, track):
+  """Add track to playlist"""
   to_be_added_tracks = spotofo.deduplicate_tracks(ctx.obj, [track])
   spotofo.add_tracks_to_playlist(ctx.obj, to_be_added_tracks)
 
 
-def _update_shared_playlist(ctx):
-  tracks = []
-  for ti in spotofo.get_currently_playing_trackinfo(ctx.obj, spotofo.get_users(ctx.obj)):
-    if spotofo.is_authorized_device(ctx.obj, ti.username, ti.device):
-      tracks.append(ti)
-  track_uris = map(lambda x: x.uri, tracks)
-  to_be_added_tracks = spotofo.deduplicate_tracks(ctx.obj, track_uris)
-  spotofo.add_tracks_to_playlist(ctx.obj, to_be_added_tracks)
-  return (tracks, track_uris, to_be_added_tracks)
-
-
-def _mqtt_single(payload, host, port, topic, username=None, password=None):
-  try:
-    from paho.mqtt.publish import single
-  except ImportError:
-    print 'Install paho-mqtt'
-    return
-  auth = None
-  if username and password:
-    auth = {'username': username, 'password': password}
-  kwargs = {
-    'payload': payload,
-    'qos': 0,
-    'retain': False,
-    'hostname': host,
-    'port': int(port),
-    'client_id': None,
-    'keepalive': 60,
-    'will': None,
-    'auth': auth,
-    'tls': None,
-    'transport': 'tcp',
-    }
-  single(topic, **kwargs)
-
-
-@cli.command()
-@click.pass_context
-def update_shared_playlist(ctx):
-  tracks, track_uris, to_be_added_tracks = _update_shared_playlist(ctx)
-  for ti in tracks:
-    print ti, ti.uri in to_be_added_tracks
-
-
 @cli.command()
 @click.pass_context
 @click.argument('host')
-@click.argument('port')
-@click.option('--topic', 'topic', help='Topic to subscribe', default='spotofo')
-@click.option('--username', 'username', default=None)
-@click.option('--password', 'password', default=None)
-def mqtt(ctx, host, port, topic, username, password):
-  tracks, track_uris, to_be_added_tracks = _update_shared_playlist(ctx)
-  data = [x for x in tracks if x.uri in to_be_added_tracks]
-  for ti in tracks:
-    print ti
-  if len(data):
-    print repr(kwargs)
-    _mqtt_single(json.dumps(data), host, port, topic, username, password)
+@click.option('--port', default=1883)
+@click.option('--topic', default='spotofo')
+@click.option('--username', default=None)
+@click.option('--password', default=None)
+def mqtt_config(ctx, host, port, topic, username, password):
+  """Set MQTT connection parameters"""
+  spotofo.set_mqtt_config(ctx.obj, host, port, topic, username, password)
+  print repr(spotofo.get_mqtt_config(ctx.obj))
 
 
 @cli.command()
 @click.pass_context
-@click.argument('host')
-@click.argument('port')
 @click.argument('msg')
-@click.option('--topic', 'topic', help='Topic to subscribe', default='spotofo')
-@click.option('--username', 'username', default=None)
-@click.option('--password', 'password', default=None)
-def mqttsend(ctx, host, port, msg, topic, username, password):
+@click.option('--topic', default=None)
+def mqtt_send(ctx, msg, topic):
   """Send message to MQTT topic"""
-  _mqtt_single(msg, host, port, topic, username, password)
+  spotofo.mqtt_single(ctx.obj, msg, topic)
 
 
 @cli.command()
 @click.pass_context
-@click.argument('host')
-@click.argument('port')
-@click.option('--topic', 'topic', help='Topic to subscribe', default='spotofo')
-@click.option('--username', 'username', default=None)
-@click.option('--password', 'password', default=None)
-def mqttclient(ctx, host, port, topic, username, password):
-  """This can be used to see what messages are sent to the topic"""
+@click.option('--host', default=None)
+@click.option('--port', default=None)
+@click.option('--topic', help='Topic to subscribe', default=None)
+@click.option('--username', default=None)
+@click.option('--password', default=None)
+def mqtt_client(ctx, host, port, topic, username, password):
+  """Monitor MQTT topic for messages"""
   try:
     import paho.mqtt.client as mqtt
   except ImportError:
     print 'Install paho-mqtt'
     return
-  import json
+  topic_arg, conf = spotofo.get_mqtt_config(ctx.obj)
+  topic_arg = topic or topic_arg
+  username = username or conf['auth']['username']
+  password = password or conf['auth']['password']
+  host = host or conf['hostname']
+  port = port or conf['port']
   def on_connect(client, userdata, flags, rc):
     if rc == 0:
-      client.subscribe(topic)
-      print 'Subscribed:', repr(topic)
+      client.subscribe(topic_arg)
+      print 'Subscribed:', repr(topic_arg)
     else:
       print mqtt.error_string(rc)
   def on_message(client, userdata, msg):
-    print(msg.topic+' '+repr(msg.payload))
+    print repr(msg.topic), repr(msg.payload)
   client = mqtt.Client()
   client.on_connect = on_connect
   client.on_message = on_message
@@ -137,6 +110,7 @@ def mqttclient(ctx, host, port, topic, username, password):
 @click.argument('username')
 @click.pass_context
 def devices(ctx, username):
+  """List available devices for user"""
   devices = spotofo.get_user_devices(ctx.obj, username)
   for device in devices:
     print device['type'], repr(device['name']), 'ID:', device['id']
@@ -145,6 +119,7 @@ def devices(ctx, username):
 @cli.command()
 @click.pass_context
 def authorized(ctx):
+  """List authorized users and devices"""
   print 'Authorized to query data from user / device:'
   for username in spotofo.get_users(ctx.obj):
     for device in spotofo.get_devices(ctx.obj, username):
@@ -155,6 +130,7 @@ def authorized(ctx):
 @click.argument('username')
 @click.pass_context
 def authorize_user(ctx, username):
+  """Add new user"""
   state, data = _oauth_authorize(ctx.obj, username, scope=spotofo.DEFAULT_SCOPE)
   if state == 'token' and data:
     spotofo.save_token_info(ctx.obj, username, data)
@@ -178,6 +154,7 @@ def authorize_user(ctx, username):
 @click.argument('target')
 @click.pass_context
 def authorize_playlist(ctx, target):
+  """Change target playlist"""
   username, playlist = spotofo.split_playlist(target)
   if not username:
     print 'Unable to handle playlist'
@@ -191,6 +168,17 @@ def authorize_playlist(ctx, target):
     print 'Authorized to change playlist', target
   else:
     print "Can't get token for", username
+
+
+def _update_shared_playlist(ctx):
+  tracks = []
+  for ti in spotofo.get_currently_playing_trackinfo(ctx.obj, spotofo.get_users(ctx.obj)):
+    if spotofo.is_authorized_device(ctx.obj, ti.username, ti.device):
+      tracks.append(ti)
+  track_uris = map(lambda x: x.uri, tracks)
+  to_be_added_tracks = spotofo.deduplicate_tracks(ctx.obj, track_uris)
+  spotofo.add_tracks_to_playlist(ctx.obj, to_be_added_tracks)
+  return (tracks, track_uris, to_be_added_tracks)
 
 
 def _oauth_authorize(config, username, scope=None, response=None):

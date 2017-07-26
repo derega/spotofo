@@ -85,6 +85,20 @@ def get_currently_playing_trackinfo(config, usernames):
       except Exception, e:
         print repr(e)
 
+### MQTT functions
+
+def mqtt_single(config, payload, topic=None):
+  try:
+    from paho.mqtt.publish import single
+  except ImportError:
+    print 'Install paho-mqtt'
+    return
+  arg_topic, kwargs = get_mqtt_config(config)
+  kwargs['payload'] = payload
+  if topic: arg_topic = topic
+  #print repr(arg_topic), repr(kwargs['payload'])
+  single(arg_topic, **kwargs)
+
 
 ### Config and data handling functions
 
@@ -108,6 +122,36 @@ def save_config(config):
   fn = config['config_filename']
   with codecs.open(fn, 'w') as f:
     f.write(json.dumps(config))
+
+
+def get_mqtt_config(config):
+  auth = None
+  if config['mqtt']['username'] and config['mqtt']['password']:
+    auth = {'username': config['mqtt']['username'], 'password': config['mqtt']['password']}
+  kwargs = {
+    'qos': 0,
+    'retain': False,
+    'hostname': config['mqtt']['host'],
+    'port': int(config['mqtt']['port']),
+    'client_id': None,
+    'keepalive': 60,
+    'will': None,
+    'auth': auth,
+    'tls': None,
+    'transport': 'tcp',
+    }
+  return config['mqtt']['topic'], kwargs
+
+
+def set_mqtt_config(config, host, port=1883, topic='spotofo', username=None, password=None):
+  config['mqtt'] = {
+    'host': host,
+    'port': int(port),
+    'topic': topic,
+    'username': username,
+    'password': password,
+  }
+  save_config(config)
 
 
 def add_user_device(config, username, device):
