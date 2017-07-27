@@ -220,7 +220,7 @@ def get_token_info(config, username):
   token_info = None
   if username in config['token_info']:
     token_info = config['token_info'][username]
-    if client.is_token_expired(token_info):
+    if token_info and client.is_token_expired(token_info):
       token_info = client.refresh_access_token(token_info['refresh_token'])
       save_token_info(config, username, token_info)
       save_config(config)
