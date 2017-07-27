@@ -127,6 +127,13 @@ def authorized(ctx):
 
 
 @cli.command()
+@click.pass_context
+def config(ctx):
+  """Show config"""
+  print json.dumps(ctx.obj, indent=2)
+
+
+@cli.command()
 @click.argument('username')
 @click.pass_context
 def authorize_user(ctx, username):
