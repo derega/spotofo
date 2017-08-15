@@ -181,6 +181,7 @@ def _update_shared_playlist(ctx):
   tracks = []
   for ti in spotofo.get_currently_playing_trackinfo(ctx.obj, spotofo.get_users(ctx.obj)):
     if spotofo.is_authorized_device(ctx.obj, ti.username, ti.device):
+      spotofo.analyze_play(ctx.obj, ti)
       tracks.append(ti)
   track_uris = map(lambda x: x.uri, tracks)
   to_be_added_tracks = spotofo.deduplicate_tracks(ctx.obj, track_uris)

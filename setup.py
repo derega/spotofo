@@ -11,6 +11,7 @@ setup(
     ],
     extras_require={
         'mqtt': ['paho-mqtt==1.3.0'],
+        'influx': ['requests==2.18.2'],
     },
     entry_points={
         'console_scripts': [

@@ -235,6 +235,22 @@ def spotify_client(config, username):
   return sp
 
 
+### Analyze
+
+def influx_write(config, meas, tags, name, value):
+  url = config.get('influx_write_url', None)
+  if not url: return
+  import requests
+  for n,v in tags.iteritems():
+    meas = meas + u',%s=%s'%(n,v)
+  data = u'%s %s=%s' % (meas, name, str(value))
+  r = requests.post(url, data=data)
+
+
+def analyze_play(config, trackinfo):
+  influx_write(config, 'spotofo.play', {'user': trackinfo.username}, 'count', '1i')
+
+
 ### oAuth functions
 
 def oauth_client(config, scope=None):
