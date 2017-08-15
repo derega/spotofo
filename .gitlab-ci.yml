@@ -3,5 +3,6 @@ image: python:2
 test:
   script:
     - pip install --editable .
+    - DJANGO_SETTINGS_MODULE=spotofoweb.settings python manage.py migrate
     - DJANGO_SETTINGS_MODULE=spotofoweb.settings spotofo currently_playing
 
