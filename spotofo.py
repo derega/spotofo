@@ -119,7 +119,7 @@ def get_mqtt_config():
   if MqttTopic.objects.exists():
     m = MqttTopic.objects.filter()[0]
     auth = {'username': m.username, 'password': m.password}
-    hostname = m.hostname
+    hostname = m.host
     port = m.port
     topic = m.topic
   kwargs = {
