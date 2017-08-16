@@ -2,13 +2,17 @@
 import re
 import json
 import codecs
+import logging
 from collections import namedtuple
 import spotipy
+from django.core.cache import cache
 from spotofoweb.models import SpotifyUser, Device, Playlist, MqttTopic
 from spotofoweb import config
 
 
 DEFAULT_SCOPE = 'user-read-playback-state'
+
+LOG = logging.getLogger(__name__)
 
 
 def _pd(d):
@@ -66,22 +70,29 @@ def get_user_devices(username):
 
 def get_currently_playing_trackinfo(usernames):
   for username in usernames:
-    sp = spotify_client(username)
-    if sp:
-      try:
-        r = sp._get('me/player')
-        track = r['item']
-        data = {
-          'username': username,
-          'track': track['name'],
-          'album': track['album']['name'],
-          'artist': track['artists'][0]['name'],
-          'uri': track['uri'],
-          'device': r['device']['id'],
-          }
-        yield TrackInfo(**data)
-      except Exception, e:
-        print repr(e)
+    cache_key = u'currently_playing-%s'%(username)
+    data = cache.get(cache_key)
+    if data:
+      yield TrackInfo(**data)
+    else:
+      sp = spotify_client(username)
+      if sp:
+        try:
+          r = sp._get('me/player')
+          track = r['item']
+          data = {
+            'username': username,
+            'track': track['name'],
+            'album': track['album']['name'],
+            'artist': track['artists'][0]['name'],
+            'uri': track['uri'],
+            'device': r['device']['id'],
+            }
+          cache.set(cache_key, data, 55)
+          yield TrackInfo(**data)
+        except Exception:
+          LOG.exception('Cannot query currently playing track')
+
 
 ### MQTT functions
 
