@@ -191,8 +191,9 @@ def get_token_info(username):
       token_info = json.loads(user.token_info)
     if token_info and client.is_token_expired(token_info):
       token_info = client.refresh_access_token(token_info['refresh_token'])
-      user.token_info = json.dumps(token_info)
-      user.save()
+      if token_info:
+        user.token_info = json.dumps(token_info)
+        user.save()
   except SpotifyUser.DoesNotExist:
     pass
   return token_info
