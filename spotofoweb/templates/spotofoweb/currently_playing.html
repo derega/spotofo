@@ -1,9 +1,28 @@
 
-<ul>
+<style>
+table {
+  border: 3px solid #aaa;
+  padding: 3px;
+}
+td {
+  border-left: 3px solid #aaa;
+  padding: 3px;
+}
+td:first-child {
+  border-left: none;
+}
+</style>
+
+<table>
 {% for ti in currently_playing %}
-<li>{{ ti }}</li>
+<tr>
+<td>{{ ti.username }}</td>
+<td>{{ ti.track }}</td>
+<td>{{ ti.album }}</td>
+<td><a href="{{ ti.uri }}">{{ ti.uri }}</a></td>
+</tr>
 {% endfor %}
-</ul>
+</table>
 
 <a href="/authorize">Authorize</a>
 
