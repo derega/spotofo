@@ -1,19 +1,11 @@
+{% extends "spotofoweb/base.html" %}
+{% load i18n %}
 
-<style>
-table {
-  border: 3px solid #aaa;
-  padding: 3px;
-}
-td {
-  border-left: 3px solid #aaa;
-  padding: 3px;
-}
-td:first-child {
-  border-left: none;
-}
-</style>
+{% block "title" %}{% trans "Currently Playing" %}{% endblock %}
 
-<table>
+{% block "content" %}
+
+<table class="table table-striped">
 {% for ti in currently_playing %}
 <tr>
 <td>{{ ti.username }}</td>
@@ -22,8 +14,12 @@ td:first-child {
 <td>{{ ti.album }}</td>
 <td><a href="{{ ti.uri }}">{{ ti.uri }}</a></td>
 </tr>
+{% empty %}
+<p>{% trans "Nothing playing currently." %}</p>
 {% endfor %}
+
 </table>
 
-<a href="/authorize">Authorize</a>
+
+{% endblock %}
 

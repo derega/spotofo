@@ -1,7 +1,40 @@
+{% extends "spotofoweb/base.html" %}
+{% load i18n %}{% load bootstrap %}
+
+{% block "title" %}{% trans "Authorize user" %}{% endblock %}
+
+{% block "content" %}
+<div class="container">
+<div class="row">
+<div class="col">
+<h1>{% trans "Authorize user" %}</h1>
+{% blocktrans %}
+<p>
+Enter your Spotify username to the field and begin the
+authorization process.
+</p>
+<p>
+During authorization Spotify will
+ask you to give this service permission to read your
+currently playing information.
+</p>
+<p>
+If you have done this already at some point Spotify may not ask
+anything and you are redirected directly back here.
+This is normal and all is well.
+</p>
+{% endblocktrans %}
+</div>
+<div class="col">
 
 <form method="post">
   {% csrf_token %}
-  {{ form }}
-<input type="submit" value="Submit" />
+  {{ form|bootstrap }}
+  <div class="form-group"><button type="submit" class="btn btn-primary">{% trans "Begin authorization" %}</button></div>
 </form>
+
+</div>
+</div>
+</div>
+{% endblock %}
 
