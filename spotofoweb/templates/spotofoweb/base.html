@@ -10,10 +10,14 @@
     <link rel="stylesheet" href="{% static "styles.css" %}">
   </head>
   <body>
-    <nav class="navbar navbar-dark bg-dark fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
     <a class="navbar-brand" href="/">Spotofo</a>
-    <ul class="navbar-nav">
+    <ul class="navbar-nav flex-row ml-md-auto d-md-flex">
+    {% if user.is_authenticated %}
+    <li class="navbar-text">Hello, {{ user.username }}</li>
+    {% else %}
     <li class="nav-item"><a class="nav-link" href="/authorize">{% trans "Authorize" %}</a></li>
+    {% endif %}
     </ul>
     </nav>
 

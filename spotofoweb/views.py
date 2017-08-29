@@ -2,6 +2,8 @@
 from django.core.cache import cache
 from django import forms
 from django.http import HttpResponseRedirect
+from django.contrib.auth.models import User
+from django.contrib.auth import login as auth_login
 from django.views.generic import View, FormView, TemplateView
 import spotofo
 
@@ -28,6 +30,7 @@ class AuthorizeUserView(FormView):
   def form_valid(self, form):
     username = form.cleaned_data['username']
     sp_oauth = spotofo.oauth_client()
+    self.request.session['authorize_username'] = username
     url = sp_oauth.get_authorize_url(state=username)
     self.success_url = url
     return super(FormView, self).form_valid(form)
@@ -37,8 +40,16 @@ class AuthorizeResponseView(View):
   def get(self, request, *args, **kwargs):
     code = request.GET.get('code', None)
     username = request.GET.get('state', None)
-    sp_oauth = spotofo.oauth_client()
-    token_info = sp_oauth.get_access_token(code)
-    spotofo.save_token_info(username, token_info)
+    authorize_username = request.session.pop('authorize_username', None)
+    if authorize_username and authorize_username == username:
+      sp_oauth = spotofo.oauth_client()
+      token_info = sp_oauth.get_access_token(code)
+      if token_info:
+        sp_user = spotofo.save_token_info(username, token_info)
+        user,_ = User.objects.get_or_create(username=username)
+        sp_user.user = user
+        sp_user.save()
+        user.backend = 'django.contrib.auth.backends.ModelBackend'
+        auth_login(request, user)
     return HttpResponseRedirect('/')
 

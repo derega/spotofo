@@ -187,6 +187,7 @@ def save_token_info(username, token_info):
   u,_ = SpotifyUser.objects.get_or_create(username=username)
   u.token_info = json.dumps(token_info)
   u.save()
+  return u
 
 
 def get_token_info(username):
