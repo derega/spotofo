@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth import login as auth_login
 from django.views.generic import View, FormView, TemplateView
 import spotofo
+from spotofoweb.models import Playlist
 
 
 class CurrentlyPlayingView(TemplateView):
@@ -51,5 +52,11 @@ class AuthorizeResponseView(View):
         sp_user.save()
         user.backend = 'django.contrib.auth.backends.ModelBackend'
         auth_login(request, user)
+        # TODO Remove this when playlist management has been implemented
+        for pl in Playlist.objects.all():
+          sp_user.playlists.add(pl)
+        # TODO Remove this when device management has been implemented
+        for d in spotofo.get_user_devices(username):
+          spotofo.add_user_device(username, d)
     return HttpResponseRedirect('/')
 

@@ -64,7 +64,8 @@ def get_user_devices(username):
   sp = spotify_client(username)
   if sp:
     r = sp._get('me/player/devices')
-    devices = r['devices']
+    if r and 'devices' in r:
+      devices = r['devices']
   return devices
 
 
