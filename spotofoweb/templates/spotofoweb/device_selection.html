@@ -1,0 +1,42 @@
+{% extends "spotofoweb/base.html" %}
+{% load i18n %}{% load bootstrap %}
+
+{% block "title" %}{% trans "Device selection" %}{% endblock %}
+
+{% block "content" %}
+<div class="container">
+<div class="row">
+<div class="col">
+<h1>{% trans "Device selection" %}</h1>
+{% blocktrans %}
+<p>
+Select which of your devices you want to add to this service.
+</p>
+<p>
+Only plays from devices which are active are added to the playlist.
+If you are listening on a device which someone else has added to
+the system your plays are added to the playlist.
+</p>
+{% endblocktrans %}
+<h2>{% trans "Active devices" %}</h2>
+<ul class="list-group">
+{% for device in active_devices %}
+<li class="list-group-item">{{ device.name }}</li>
+{% empty %}
+<li class="list-group-item">{% trans "No active devices." %}</li>
+{% endfor %}
+</ul>
+</div>
+<div class="col">
+
+<form method="post">
+  {% csrf_token %}
+  {{ form|bootstrap }}
+  <div class="form-group"><button type="submit" class="btn btn-primary">{% trans "Activate devices" %}</button></div>
+</form>
+
+</div>
+</div>
+</div>
+{% endblock %}
+

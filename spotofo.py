@@ -241,7 +241,7 @@ def analyze_play(trackinfo):
 def oauth_client(scope=None):
   import spotipy.oauth2
   kwargs = {
-    'scope': scope,
+    'scope': scope or DEFAULT_SCOPE,
     'client_id': config.CLIENT_ID,
     'client_secret': config.CLIENT_SECRET,
     'redirect_uri': config.REDIRECT_URI,
@@ -256,7 +256,6 @@ def authorize_with_scope(username, scope=None, response=None):
   First call without response argument.
   Then call again with the URL you got from Spotify as the response argument.
   """
-  scope = scope or DEFAULT_SCOPE
   sp_oauth = oauth_client(scope=scope)
   if response:
     code = sp_oauth.parse_response_code(response)

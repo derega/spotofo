@@ -10,6 +10,9 @@ class Playlist(models.Model):
   def uri(self):
     return 'spotify:user:%s:playlist:%s'%(self.spuser, self.spid)
 
+  def open_url(self):
+    return 'https://open.spotify.com/user/%s/playlist/%s'%(self.spuser, self.spid)
+
   @classmethod
   def split_uri(cls, target):
     m = re.match('spotify:user:([^:]*):playlist:(.*)', target)

@@ -20,6 +20,11 @@
 
 </table>
 
+<ul>
+{% for pl in playlists %}
+<li><a href="{{ pl.open_url }}" target="_blank">{{ pl.uri }}</a></li>
+{% endfor %}
+</ul>
 
 {% endblock %}
 
