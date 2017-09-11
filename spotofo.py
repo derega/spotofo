@@ -21,7 +21,7 @@ def _pd(d):
 
 ### Spotify data handling functions
 
-TrackInfo = namedtuple('TrackInfo', ('username', 'track', 'album', 'artist', 'uri', 'device'))
+TrackInfo = namedtuple('TrackInfo', ('username', 'track', 'album', 'artist', 'uri', 'device', 'is_playing'))
 
 def get_all_tracks_from_playlist(playlist):
   sp = spotify_client(playlist.spuser)
@@ -88,6 +88,7 @@ def get_currently_playing_trackinfo(usernames):
             'artist': track['artists'][0]['name'],
             'uri': track['uri'],
             'device': r['device']['id'],
+            'is_playing': r['is_playing'],
             }
           cache.set(cache_key, data, 55)
           yield TrackInfo(**data)

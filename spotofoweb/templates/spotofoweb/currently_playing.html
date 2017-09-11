@@ -5,14 +5,23 @@
 
 {% block "content" %}
 
-<table class="table table-striped">
+<table class="table table-striped table-bordered">
+<thead>
+<tr>
+<th>{% trans "User" %}</th>
+<th>{% trans "Track" %}</th>
+<th>{% trans "Artist" %}</th>
+<th>{% trans "Album" %}</th>
+<th>{% trans "Playing" %}</th>
+</tr>
+</thead>
 {% for ti in currently_playing %}
 <tr>
 <td>{{ ti.username }}</td>
 <td>{{ ti.track }}</td>
 <td>{{ ti.artist }}</td>
 <td>{{ ti.album }}</td>
-<td><a href="{{ ti.uri }}">{{ ti.uri }}</a></td>
+<td class="{% if ti.is_playing %}table-success{% else %}table-danger{% endif %}"><a href="{{ ti.uri }}">{{ ti.uri }}</a></td>
 </tr>
 {% empty %}
 <p>{% trans "Nothing playing currently." %}</p>
