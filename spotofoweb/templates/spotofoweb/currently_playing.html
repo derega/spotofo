@@ -2,6 +2,14 @@
 {% load i18n %}
 
 {% block "title" %}{% trans "Currently Playing" %}{% endblock %}
+{% block "head" %}
+<meta http-equiv="refresh" content="30">
+<style>
+html {
+font-size: 200%;
+}
+</style>
+{% endblock %}
 
 {% block "content" %}
 
@@ -21,7 +29,9 @@
 <td>{{ ti.track }}</td>
 <td>{{ ti.artist }}</td>
 <td>{{ ti.album }}</td>
-<td class="{% if ti.is_playing %}table-success{% else %}table-danger{% endif %}"><a href="{{ ti.uri }}">{{ ti.uri }}</a></td>
+<td class="{% if ti.is_playing %}table-success{% else %}table-danger{% endif %}">
+<a target="_blank" href="{{ ti.uri }}">{% trans "Open" %}</a>
+</td>
 </tr>
 {% empty %}
 <p>{% trans "Nothing playing currently." %}</p>
@@ -31,7 +41,7 @@
 
 <ul>
 {% for pl in playlists %}
-<li><a href="{{ pl.open_url }}" target="_blank">{{ pl.uri }}</a></li>
+<li><a href="{{ pl.open_url }}" target="_blank">{% trans "Open target playlist" %}</a></li>
 {% endfor %}
 </ul>
 
