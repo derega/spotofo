@@ -1,6 +1,8 @@
 
+import re
 from django.db import models
 from django.contrib.auth.models import User as DjangoUser
+from django.utils import timezone
 
 
 class Playlist(models.Model):
@@ -46,6 +48,25 @@ class SpotifyUser(models.Model):
 
   def __str__(self):
     return self.username
+
+
+class Play(models.Model):
+  user = models.ForeignKey(SpotifyUser, related_name='plays')
+  device = models.ForeignKey(Device, related_name='plays')
+  device_type = models.CharField(max_length=2048)
+  playtime = models.DateTimeField(default=timezone.now)
+  username = models.CharField(max_length=2048)
+  track = models.CharField(max_length=2048)
+  artist = models.CharField(max_length=2048)
+  album = models.CharField(max_length=2048)
+  track_uri = models.CharField(max_length=2048)
+  album_uri = models.CharField(max_length=2048)
+  artist_uri = models.CharField(max_length=2048)
+  volume_percent = models.IntegerField()
+  duration_ms = models.IntegerField()
+  popularity = models.IntegerField()
+  explicit = models.BooleanField()
+  json_string = models.TextField()
 
 
 class MqttTopic(models.Model):

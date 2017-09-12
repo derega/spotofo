@@ -6,7 +6,7 @@ import logging
 from collections import namedtuple
 import spotipy
 from django.core.cache import cache
-from spotofoweb.models import SpotifyUser, Device, Playlist, MqttTopic
+from spotofoweb.models import SpotifyUser, Device, Playlist, Play, MqttTopic
 from spotofoweb import config
 
 
@@ -21,7 +21,7 @@ def _pd(d):
 
 ### Spotify data handling functions
 
-TrackInfo = namedtuple('TrackInfo', ('username', 'track', 'album', 'artist', 'uri', 'device', 'is_playing'))
+TrackInfo = namedtuple('TrackInfo', ('username', 'track', 'album', 'artist', 'uri', 'device', 'is_playing', 'raw'))
 
 def get_all_tracks_from_playlist(playlist):
   sp = spotify_client(playlist.spuser)
@@ -74,7 +74,10 @@ def get_currently_playing_trackinfo(usernames):
     cache_key = u'currently_playing-%s'%(username)
     data = cache.get(cache_key)
     if data:
-      yield TrackInfo(**data)
+      try:
+        yield TrackInfo(**data)
+      except TypeError:
+        pass # will reset on cache invalidation timeout
     else:
       sp = spotify_client(username)
       if sp:
@@ -89,6 +92,7 @@ def get_currently_playing_trackinfo(usernames):
             'uri': track['uri'],
             'device': r['device']['id'],
             'is_playing': r['is_playing'],
+            'raw': r
             }
           cache.set(cache_key, data, 55)
           yield TrackInfo(**data)
@@ -232,8 +236,35 @@ def influx_write(meas, tags, name, value):
   data = u'%s %s=%s' % (meas, name, str(value))
   r = requests.post(url, data=data)
 
+def play_write(trackinfo):
+  if trackinfo.is_playing:
+    raw = trackinfo.raw
+    data = {
+    # FKs:
+      'user': SpotifyUser.objects.get(username=trackinfo.username),
+      'device': Device.objects.get(spid=trackinfo.device),
+    # From trackinfo:
+      'username': trackinfo.username,
+      'track': trackinfo.track,
+      'artist': trackinfo.artist,
+      'album': trackinfo.album,
+      'track_uri': trackinfo.uri,
+    # Parsed from raw:
+      'device_type': raw['device']['type'],
+      'album_uri': raw['item']['album']['uri'],
+      'artist_uri': raw['item']['album']['artists'][0]['uri'],
+      'volume_percent': raw['device']['volume_percent'],
+      'duration_ms': raw['item']['duration_ms'],
+      'popularity': raw['item']['popularity'],
+      'explicit': raw['item']['explicit'],
+      'json_string': json.dumps(raw),
+      }
+    play = Play.objects.create(**data)
+    play.save()
+
 
 def analyze_play(trackinfo):
+  play_write(trackinfo)
   influx_write('spotofo.play', {'user': trackinfo.username}, 'count', '1i')
 
 
