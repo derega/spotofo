@@ -1,0 +1,50 @@
+{% extends "spotofoweb/base.html" %}
+{% load i18n spotofo %}
+
+{% block "title" %}{% trans "Play History" %}{% endblock %}
+{% block "head" %}
+<meta http-equiv="refresh" content="30">
+<style>
+table {
+font-size: 200%;
+}
+</style>
+{% endblock %}
+
+{% block "content" %}
+
+<table class="table table-striped table-bordered">
+<thead>
+<tr>
+<th>{% trans "User" %}</th>
+<th>{% trans "Track" %}</th>
+<th>{% trans "Artist" %}</th>
+<th>{% trans "Album" %}</th>
+</tr>
+</thead>
+{% for ti in object_list %}
+<tr>
+<td>{{ ti.username }}</td>
+<td>{{ ti.track }}</td>
+<td>{{ ti.artist }}</td>
+<td>{{ ti.album }}</td>
+</tr>
+{% empty %}
+<p>{% trans "Nothing in play history." %}</p>
+{% endfor %}
+
+</table>
+
+{% if page_obj.has_previous %}
+<a href="/history/{{ page_obj.previous_page_number }}">&lt;&lt;</a>
+{% endif %}
+
+{{ page_obj.number }}
+
+{% if page_obj.has_next %}
+<a href="/history/{{ page_obj.next_page_number }}">&gt;&gt;</a>
+{% endif %}
+
+<a href="/history/csv">{% trans "CSV" %}</a>
+{% endblock %}
+

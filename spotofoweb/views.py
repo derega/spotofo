@@ -2,12 +2,14 @@
 import logging
 from django.core.cache import cache
 from django import forms
+from django.http import HttpResponse
 from django.http import HttpResponseRedirect
 from django.contrib.auth.models import User
 from django.contrib.auth import login as auth_login
-from django.views.generic import View, FormView, TemplateView
+from django.views.generic import View, FormView, TemplateView, ListView
+import unicodecsv
 import spotofo
-from spotofoweb.models import SpotifyUser, Device, Playlist
+from spotofoweb.models import SpotifyUser, Device, Playlist, Play
 
 LOG = logging.getLogger(__name__)
 
@@ -53,6 +55,35 @@ class CurrentlyPlayingView(TemplateView):
     context['currently_playing'] = spotofo.get_currently_playing_trackinfo(users)
     context['playlists'] = Playlist.objects.all()
     return context
+
+
+class PlayHistoryView(ListView):
+  template_name = 'spotofoweb/play_history.html'
+  model = Play
+  ordering = '-timestamp'
+  paginate_by = 10
+
+
+class PlayHistoryCsvView(View):
+  def get(request, *args, **kwargs):
+    response = HttpResponse(u'', content_type="text/plain")
+    writer = unicodecsv.writer(response)
+    qs = Play.objects.filter(timestamp__gt=0).order_by('-timestamp')
+    if qs.exists():
+      for play in qs.all()[:1000]:
+        data = [
+          play.username,
+          play.track,
+          play.artist,
+          play.album,
+          play.track_uri,
+          play.volume_percent,
+          play.duration_ms,
+          play.popularity,
+          play.explicit,
+          ]
+        writer.writerow(data)
+    return response
 
 
 class DeviceSelectForm(forms.Form):

@@ -10,6 +10,7 @@ setup(
         'spotipy==2.4.4',
         'django==1.11',
         'django-bootstrap-form==3.3',
+        'unicodecsv==0.14.1',
     ],
     extras_require={
         'mqtt': ['paho-mqtt==1.3.0'],
