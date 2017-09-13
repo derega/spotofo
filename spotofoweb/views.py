@@ -50,8 +50,11 @@ class CurrentlyPlayingView(TemplateView):
   def get_context_data(self, **kwargs):
     context = super(TemplateView, self).get_context_data(**kwargs)
     users = spotofo.get_users()
-    cp = list(spotofo.get_currently_playing_trackinfo(users))
-    context['currently_playing'] = cp
+    currently_playing = []
+    for ti in spotofo.get_currently_playing_trackinfo(users):
+      active = spotofo.is_authorized_device(ti.username, ti.device)
+      currently_playing.append({'ti': ti, 'active': active})
+    context['currently_playing'] = currently_playing
     context['playlists'] = Playlist.objects.all()
     return context
 

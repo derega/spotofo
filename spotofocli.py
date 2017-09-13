@@ -19,8 +19,8 @@ def cli(ctx, cfn):
 @click.pass_context
 def currently_playing(ctx):
   """Currently playing tracks for all users"""
-  for trackinfo in spotofo.get_currently_playing_trackinfo(spotofo.get_users()):
-    print trackinfo
+  for ti in spotofo.get_currently_playing_trackinfo(spotofo.get_users()):
+    print ti.username, ti.track, ti.artist, ti.album
 
 
 @cli.command()
@@ -36,7 +36,7 @@ def update_playlist(ctx, topic):
   tracks, track_uris, added_tracks = _update_shared_playlist()
   data = [x for x in tracks if x.uri in added_tracks]
   for ti in tracks:
-    print ti
+    print ti.username, ti.track, ti.artist, ti.album
   if len(data):
     spotofo.mqtt_single(json.dumps(data), topic)
 
@@ -202,7 +202,8 @@ def authorize_playlist(ctx, target):
 
 def _update_shared_playlist():
   tracks = []
-  for ti in spotofo.get_currently_playing_trackinfo(spotofo.get_users()):
+  users = spotofo.get_users()
+  for ti in spotofo.get_currently_playing_trackinfo(users):
     if spotofo.is_authorized_device(ti.username, ti.device):
       spotofo.analyze_play(ti)
       tracks.append(ti)
