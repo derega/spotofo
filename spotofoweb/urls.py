@@ -9,7 +9,7 @@ from spotofoweb.views import AuthorizeUserView, AuthorizeResponseView
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
-    url(r'^$', CurrentlyPlayingView.as_view()),
+    url(r'^$', login_required(CurrentlyPlayingView.as_view())),
     url(r'^history$', login_required(PlayHistoryView.as_view())),
     url(r'^history/(?P<page>[0-9]+)$', login_required(PlayHistoryView.as_view())),
     url(r'^history/csv$', login_required(PlayHistoryCsvView.as_view())),
