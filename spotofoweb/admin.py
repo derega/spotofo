@@ -40,7 +40,7 @@ class PlaylistAdmin(admin.ModelAdmin):
 
 
 class PlayAdmin(admin.ModelAdmin):
-  list_display = ('playtime', 'track', 'artist', 'album', 'username', 'device_type', 'volume_percent', 'duration_ms', 'popularity', 'explicit')
+  list_display = ('timestamp', 'playtime', 'track', 'artist', 'album', 'username', 'device_type', 'volume_percent', 'duration_ms', 'popularity', 'explicit')
 
 
 class SpotifyUserDeviceInline(SpotifyUserInline, admin.TabularInline):

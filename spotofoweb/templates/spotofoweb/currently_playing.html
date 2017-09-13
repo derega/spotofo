@@ -1,5 +1,5 @@
 {% extends "spotofoweb/base.html" %}
-{% load i18n %}
+{% load i18n spotofo %}
 
 {% block "title" %}{% trans "Currently Playing" %}{% endblock %}
 {% block "head" %}
@@ -23,20 +23,20 @@ font-size: 200%;
 <th></th>
 </tr>
 </thead>
-{% for cp in currently_playing %}
+{% for ti in currently_playing %}
 <tr>
-<td>{{ cp.ti.username }}</td>
-{% if cp.active %}
-<td>{{ cp.ti.track }}</td>
-<td>{{ cp.ti.artist }}</td>
-<td>{{ cp.ti.album }}</td>
+<td>{{ ti.username }}</td>
+{% if ti.active_device %}
+<td>{{ ti.track }}</td>
+<td>{{ ti.artist }}</td>
+<td>{{ ti.album }}</td>
 {% else %}
 <td>-</td>
 <td>-</td>
 <td>-</td>
 {% endif %}
-<td style="width: 1em" class="{% if cp.ti.is_playing %}table-success{% else %}table-danger{% endif %}">
-{% if cp.active %}<a target="_blank" href="{{ ti.uri }}">{% trans "Open" %}</a>{% else %}-{% endif %}
+<td style="width: 1em" class="{% if ti.is_playing %}table-success{% else %}table-danger{% endif %}">
+{% if ti.active_device %}<a target="_blank" href="{{ ti.uri }}">{{ ti.progress|progress100|floatformat:"0" }}%</a>{% else %}-{% endif %}
 </td>
 </tr>
 {% empty %}

@@ -20,7 +20,13 @@ def cli(ctx, cfn):
 def currently_playing(ctx):
   """Currently playing tracks for all users"""
   for ti in spotofo.get_currently_playing_trackinfo(spotofo.get_users()):
-    print ti.username, ti.track, ti.artist, ti.album
+    print ti.username,
+    if ti.active_device:
+      print '||', ti.track, '||',
+      print ti.artist, '||',
+      print ti.album, ti.progress
+    else:
+      print
 
 
 @cli.command()
@@ -36,7 +42,7 @@ def update_playlist(ctx, topic):
   tracks, track_uris, added_tracks = _update_shared_playlist()
   data = [x for x in tracks if x.uri in added_tracks]
   for ti in tracks:
-    print ti.username, ti.track, ti.artist, ti.album
+    print ti.is_playing, ti.username, ti.track, ti.artist, ti.album
   if len(data):
     spotofo.mqtt_single(json.dumps(data), topic)
 

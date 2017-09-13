@@ -21,7 +21,7 @@ def _pd(d):
 
 ### Spotify data handling functions
 
-TrackInfo = namedtuple('TrackInfo', ('username', 'track', 'album', 'artist', 'uri', 'device', 'is_playing', 'raw'))
+TrackInfo = namedtuple('TrackInfo', ('username', 'track', 'album', 'artist', 'uri', 'device', 'progress', 'is_playing', 'active_device', 'raw'))
 
 def get_all_tracks_from_playlist(playlist):
   sp = spotify_client(playlist.spuser)
@@ -84,6 +84,9 @@ def get_currently_playing_trackinfo(usernames):
         try:
           r = sp._get('me/player')
           track = r['item']
+          duration_ms = float(r['item']['duration_ms'])
+          progress_ms = float(r['progress_ms'])
+          progress = progress_ms / duration_ms
           data = {
             'username': username,
             'track': track['name'],
@@ -91,7 +94,9 @@ def get_currently_playing_trackinfo(usernames):
             'artist': track['artists'][0]['name'],
             'uri': track['uri'],
             'device': r['device']['id'],
+            'progress': progress,
             'is_playing': r['is_playing'],
+            'active_device': is_authorized_device(username, r['device']['id']),
             'raw': r
             }
           cache.set(cache_key, data, 55)
@@ -239,10 +244,7 @@ def influx_write(meas, tags, name, value):
 def play_write(trackinfo):
   if trackinfo.is_playing:
     raw = trackinfo.raw
-    data = {
-    # FKs:
-      'user': SpotifyUser.objects.get(username=trackinfo.username),
-      'device': Device.objects.get(spid=trackinfo.device),
+    defaults = {
     # From trackinfo:
       'username': trackinfo.username,
       'track': trackinfo.track,
@@ -259,8 +261,15 @@ def play_write(trackinfo):
       'explicit': raw['item']['explicit'],
       'json_string': json.dumps(raw),
       }
-    play = Play.objects.create(**data)
-    play.save()
+    data = {
+      'user': SpotifyUser.objects.get(username=trackinfo.username),
+      'device': Device.objects.get(spid=trackinfo.device),
+      'timestamp': raw['timestamp'],
+      'defaults': defaults,
+      }
+    play, created = Play.objects.get_or_create(**data)
+    if created:
+      play.save()
 
 
 def analyze_play(trackinfo):
