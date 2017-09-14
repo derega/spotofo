@@ -5,9 +5,10 @@
 {% block "head" %}
 <meta http-equiv="refresh" content="30">
 <style>
-table {
-font-size: 200%;
-}
+table { font-size: 200%; }
+{% if hide_navigation %}
+body { padding-top: 0; }
+{% endif %}
 </style>
 {% endblock %}
 
@@ -45,11 +46,13 @@ font-size: 200%;
 
 </table>
 
+{% if not hide_navigation %}
 <ul>
 {% for pl in playlists %}
 <li><a href="{{ pl.open_url }}" target="_blank">{% trans "Open target playlist" %}</a></li>
 {% endfor %}
 </ul>
+{% endif %}
 
 {% endblock %}
 

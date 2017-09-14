@@ -43,21 +43,31 @@ def get_django_user(sp_user):
   return sp_user.user
 
 
+# Mixins
+
+
+class NavigationMixin(object):
+  def get_context_data(self, **kwargs):
+    context = super(NavigationMixin, self).get_context_data(**kwargs)
+    context['hide_navigation'] = 'auth' in self.request.GET
+    return context
+
+
 # Views
 
 
-class CurrentlyPlayingView(TemplateView):
+class CurrentlyPlayingView(NavigationMixin, TemplateView):
   template_name = 'spotofoweb/currently_playing.html'
 
   def get_context_data(self, **kwargs):
-    context = super(TemplateView, self).get_context_data(**kwargs)
+    context = super(CurrentlyPlayingView, self).get_context_data(**kwargs)
     users = spotofo.get_users()
     context['currently_playing'] = spotofo.get_currently_playing_trackinfo(users)
     context['playlists'] = Playlist.objects.all()
     return context
 
 
-class PlayHistoryView(ListView):
+class PlayHistoryView(NavigationMixin, ListView):
   template_name = 'spotofoweb/play_history.html'
   model = Play
   ordering = '-timestamp'

@@ -5,9 +5,10 @@
 {% block "head" %}
 <meta http-equiv="refresh" content="30">
 <style>
-table {
-font-size: 200%;
-}
+table { font-size: 200%; }
+{% if hide_navigation %}
+body { padding-top: 0; }
+{% endif %}
 </style>
 {% endblock %}
 
@@ -35,6 +36,7 @@ font-size: 200%;
 
 </table>
 
+{% if not hide_navigation %}
 {% if page_obj.has_previous %}
 <a href="/history/{{ page_obj.previous_page_number }}">&lt;&lt;</a>
 {% endif %}
@@ -46,5 +48,7 @@ font-size: 200%;
 {% endif %}
 
 <a href="/history/csv">{% trans "CSV" %}</a>
+{% endif %}
+
 {% endblock %}
 
