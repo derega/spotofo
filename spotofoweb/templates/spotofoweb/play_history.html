@@ -1,7 +1,7 @@
 {% extends "spotofoweb/base.html" %}
 {% load i18n spotofo %}
 
-{% block "title" %}{% trans "Currently Playing" %}{% endblock %}
+{% block "title" %}{% trans "Play History" %}{% endblock %}
 {% block "head" %}
 <meta http-equiv="refresh" content="30">
 <style>
@@ -21,37 +21,33 @@ body { padding-top: 0; }
 <th>{% trans "Track" %}</th>
 <th>{% trans "Artist" %}</th>
 <th>{% trans "Album" %}</th>
-<th></th>
 </tr>
 </thead>
-{% for ti in currently_playing %}
+{% for ti in object_list %}
 <tr>
 <td>{{ ti.username }}</td>
-{% if ti.active_device %}
 <td>{{ ti.track }}</td>
 <td>{{ ti.artist }}</td>
 <td>{{ ti.album }}</td>
-{% else %}
-<td>-</td>
-<td>-</td>
-<td>-</td>
-{% endif %}
-<td style="width: 1em" class="{% if ti.is_playing %}table-success{% else %}table-danger{% endif %}">
-{% if ti.active_device %}<a target="_blank" href="{{ ti.uri }}">{{ ti.progress|progress100|floatformat:"0" }}%</a>{% else %}-{% endif %}
-</td>
 </tr>
 {% empty %}
-<p>{% trans "Nothing playing currently." %}</p>
+<p>{% trans "Nothing in play history." %}</p>
 {% endfor %}
 
 </table>
 
 {% if not hide_navigation %}
-<ul>
-{% for pl in playlists %}
-<li><a href="{{ pl.open_url }}" target="_blank">{% trans "Open target playlist" %}</a></li>
-{% endfor %}
-</ul>
+{% if page_obj.has_previous %}
+<a href="/history/{{ page_obj.previous_page_number }}">&lt;&lt;</a>
+{% endif %}
+
+{{ page_obj.number }}
+
+{% if page_obj.has_next %}
+<a href="/history/{{ page_obj.next_page_number }}">&gt;&gt;</a>
+{% endif %}
+
+<a href="/history/csv">{% trans "CSV" %}</a>
 {% endif %}
 
 {% endblock %}

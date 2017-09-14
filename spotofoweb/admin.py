@@ -39,6 +39,9 @@ class PlaylistAdmin(admin.ModelAdmin):
     return 'spotify:user:%s:playlist:%s'%(username, spid)
 
 
+class PlayAdmin(admin.ModelAdmin):
+  list_display = ('timestamp', 'playtime', 'track', 'artist', 'album', 'username', 'device_type', 'volume_percent', 'duration_ms', 'popularity', 'explicit')
+
 
 class SpotifyUserDeviceInline(SpotifyUserInline, admin.TabularInline):
   model = models.SpotifyUser.devices.through
@@ -114,6 +117,7 @@ class UserPlaylistAdmin(admin.ModelAdmin):
   list_display = ('spotifyuser', 'playlist')
 
 admin.site.register(models.Playlist, PlaylistAdmin)
+admin.site.register(models.Play, PlayAdmin)
 admin.site.register(models.Device, DeviceAdmin)
 admin.site.register(models.SpotifyUser, SpotifyUserAdmin)
 admin.site.register(models.MqttTopic, MqttTopicAdmin)
