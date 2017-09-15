@@ -35,6 +35,6 @@ class Migration(migrations.Migration):
         ),
         migrations.AddIndex(
             model_name='play',
-            index=models.Index(fields=[b'user', b'device', b'timestamp'], name='spotofoweb__user_id_379c48_idx'),
+            index=models.Index(fields=['user', 'device', 'timestamp'], name='spotofoweb__user_id_379c48_idx'),
         ),
     ]

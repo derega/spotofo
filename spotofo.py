@@ -1,4 +1,5 @@
 
+from __future__ import print_function
 import re
 import json
 import codecs
@@ -16,7 +17,7 @@ LOG = logging.getLogger(__name__)
 
 
 def _pd(d):
-  print json.dumps(d, indent=2)
+  print(json.dumps(d, indent=2))
 
 
 ### Spotify data handling functions
@@ -111,12 +112,12 @@ def mqtt_single(payload, topic=None):
   try:
     from paho.mqtt.publish import single
   except ImportError:
-    print 'Install paho-mqtt'
+    print('Install paho-mqtt')
     return
   arg_topic, kwargs = get_mqtt_config()
   kwargs['payload'] = payload
   if topic: arg_topic = topic
-  #print repr(arg_topic), repr(kwargs['payload'])
+  #print(repr(arg_topic), repr(kwargs['payload']))
   single(arg_topic, **kwargs)
 
 

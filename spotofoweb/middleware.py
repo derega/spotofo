@@ -1,7 +1,11 @@
 
+import logging
 from django.contrib.auth import login as auth_login
 from django.contrib.auth.models import User
 from spotofoweb.config import AUTHKEYS
+
+LOG = logging.getLogger(__name__)
+
 
 class AuthkeyMiddleware(object):
   def __init__(self, get_response):
@@ -15,7 +19,7 @@ class AuthkeyMiddleware(object):
         user.backend = 'django.contrib.auth.backends.ModelBackend'
         auth_login(request, user)
       except:
-        print "ERROR"
+        LOG.error('AUTHKEYS user objects does not exist')
     response = self.get_response(request)
     return response
 

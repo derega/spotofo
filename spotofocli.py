@@ -1,4 +1,5 @@
 
+from __future__ import print_function
 import django
 django.setup()
 
@@ -20,13 +21,13 @@ def cli(ctx, cfn):
 def currently_playing(ctx):
   """Currently playing tracks for all users"""
   for ti in spotofo.get_currently_playing_trackinfo(spotofo.get_users()):
-    print ti.username,
+    print(ti.username, end=' ')
     if ti.active_device:
-      print '||', ti.track, '||',
-      print ti.artist, '||',
-      print ti.album, ti.progress
+      print('||', ti.track, '||', end=' ')
+      print(ti.artist, '||', end=' ')
+      print(ti.album, ti.progress)
     else:
-      print
+      print()
 
 
 @cli.command()
@@ -42,7 +43,7 @@ def update_playlist(ctx, topic):
   tracks, track_uris, added_tracks = _update_shared_playlist()
   data = [x for x in tracks if x.uri in added_tracks]
   for ti in tracks:
-    print ti.is_playing, ti.username, ti.track, ti.artist, ti.album
+    print(ti.is_playing, ti.username, ti.track, ti.artist, ti.album)
   if len(data):
     spotofo.mqtt_single(json.dumps(data), topic)
 
@@ -66,7 +67,7 @@ def add_track(ctx, track):
 def mqtt_config(ctx, host, port, topic, username, password):
   """Set MQTT connection parameters"""
   spotofo.set_mqtt_config(host, port, topic, username, password)
-  print repr(spotofo.get_mqtt_config())
+  print(repr(spotofo.get_mqtt_config()))
 
 
 @cli.command()
@@ -77,8 +78,8 @@ def mqtt_send(ctx, msg, topic):
   """Send message to MQTT topic"""
   try:
     spotofo.mqtt_single(msg, topic)
-  except ValueError, e:
-    print e
+  except ValueError as e:
+    print(e)
     return
 
 
@@ -94,7 +95,7 @@ def mqtt_client(ctx, host, port, topic, username, password):
   try:
     import paho.mqtt.client as mqtt
   except ImportError:
-    print 'Install paho-mqtt'
+    print('Install paho-mqtt')
     return
   topic_arg, conf = spotofo.get_mqtt_config()
   topic_arg = topic or topic_arg
@@ -109,11 +110,11 @@ def mqtt_client(ctx, host, port, topic, username, password):
   def on_connect(client, userdata, flags, rc):
     if rc == 0:
       client.subscribe(topic_arg)
-      print 'Subscribed:', repr(topic_arg)
+      print('Subscribed:', repr(topic_arg))
     else:
-      print mqtt.error_string(rc)
+      print(mqtt.error_string(rc))
   def on_message(client, userdata, msg):
-    print repr(msg.topic), repr(msg.payload)
+    print(repr(msg.topic), repr(msg.payload))
   client = mqtt.Client()
   client.on_connect = on_connect
   client.on_message = on_message
@@ -121,8 +122,8 @@ def mqtt_client(ctx, host, port, topic, username, password):
     client.username_pw_set(username, password)
   try:
     client.connect(host, int(port), 60)
-  except ValueError, e:
-    print e
+  except ValueError as e:
+    print(e)
     return
   client.loop_forever()
 
@@ -134,24 +135,24 @@ def devices(ctx, username):
   """List available devices for user"""
   devices = spotofo.get_user_devices(username)
   for device in devices:
-    print device['type'], repr(device['name']), 'ID:', device['id']
+    print(device['type'], repr(device['name']), 'ID:', device['id'])
 
 
 @cli.command()
 @click.pass_context
 def authorized(ctx):
   """List authorized users and devices"""
-  print 'Authorized to query data from user / device:'
+  print('Authorized to query data from user / device:')
   for username in spotofo.get_users():
     for device in spotofo.get_devices(username):
-      print username, '/', device
+      print(username, '/', device)
 
 
 @cli.command()
 @click.pass_context
 def config(ctx):
   """Show config"""
-  print 'Nothing to show'
+  print('Nothing to show')
 
 
 @cli.command()
@@ -162,9 +163,9 @@ def authorize_user(ctx, username):
   state, data = _oauth_authorize(username, scope=spotofo.DEFAULT_SCOPE)
   if state == 'token' and data:
     spotofo.save_token_info(username, data)
-    print 'Authorized to query data from user', username
+    print('Authorized to query data from user', username)
   else:
-    print "Can't get token for", username
+    print("Can't get token for", username)
 
 
 @cli.command()
@@ -176,15 +177,15 @@ def authorize_device(ctx, username):
   device_ids = []
   if devices:
     for device in devices:
-      print device['type'], repr(device['name']), 'ID:', device['id']
+      print(device['type'], repr(device['name']), 'ID:', device['id'])
       device_ids.append(device['id'])
-    device_id = raw_input('Enter the device ID you want to authorize: ')
+    device_id = input('Enter the device ID you want to authorize: ')
     for device in devices:
       if device_id == device['id']:
         spotofo.add_user_device(username, device)
-        print 'Authorized to query data from user', username, 'device', device['id']
+        print('Authorized to query data from user', username, 'device', device['id'])
         return
-    print "Can't authorize device", device
+    print("Can't authorize device", device)
 
 
 @cli.command()
@@ -194,16 +195,16 @@ def authorize_playlist(ctx, target):
   """Change target playlist"""
   username, playlist = spotofo.split_playlist(target)
   if not username:
-    print 'Unable to handle playlist'
+    print('Unable to handle playlist')
     return
   scope = 'playlist-modify-private'
   state, data = _oauth_authorize(username, scope=scope)
   if state == 'token' and data:
     spotofo.save_token_info(username, data)
     spotofo.save_playlist(username, playlist)
-    print 'Authorized to change playlist', target
+    print('Authorized to change playlist', target)
   else:
-    print "Can't get token for", username
+    print("Can't get token for", username)
 
 
 def _update_shared_playlist():
@@ -222,7 +223,7 @@ def _update_shared_playlist():
 def _oauth_authorize(username, scope=None, response=None):
   state, data = spotofo.authorize_with_scope(username, scope=scope)
   print('Please navigate here: %s' % data)
-  response = raw_input('Enter the URL you were redirected to: ')
+  response = input('Enter the URL you were redirected to: ')
   state, data = spotofo.authorize_with_scope(username, scope=scope, response=response)
   return state, data
 
