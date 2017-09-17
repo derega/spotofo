@@ -1,7 +1,6 @@
 
 from spotofoweb.settings import *
 
-import os
 import dj_database_url
 
 DATABASES['default'] = dj_database_url.config()
@@ -23,7 +22,8 @@ INSTALLED_APPS += (
 )
 
 RAVEN_CONFIG = {
-  'dsn': os.environ.get('SENTRY_DSN', '')
+  'dsn': os.environ.get('SENTRY_DSN', ''),
+  'release': os.environ.get('HEROKU_SLUG_COMMIT', None),
 }
 
 LOGGING = {
