@@ -62,7 +62,8 @@ class CurrentlyPlayingView(NavigationMixin, TemplateView):
   def get_context_data(self, **kwargs):
     context = super(CurrentlyPlayingView, self).get_context_data(**kwargs)
     users = spotofo.get_users()
-    context['currently_playing'] = spotofo.get_currently_playing_trackinfo(users)
+    currently_playing = spotofo.get_currently_playing_trackinfo(users)
+    context['currently_playing'] = sorted(currently_playing)
     context['playlists'] = Playlist.objects.all()
     return context
 

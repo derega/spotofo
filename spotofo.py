@@ -82,28 +82,39 @@ def get_currently_playing_trackinfo(usernames):
     else:
       sp = spotify_client(username)
       if sp:
+        r = None
         try:
           r = sp._get('me/player')
+        except Exception:
+          LOG.warning('Currently playing track query failed', extra={'data': {'username': username}})
+        if r:
           track = r['item']
-          duration_ms = float(r['item']['duration_ms'])
-          progress_ms = float(r['progress_ms'])
-          progress = progress_ms / duration_ms
           data = {
             'username': username,
-            'track': track['name'],
-            'album': track['album']['name'],
-            'artist': track['artists'][0]['name'],
-            'uri': track['uri'],
             'device': r['device']['id'],
-            'progress': progress,
             'is_playing': r['is_playing'],
             'active_device': is_authorized_device(username, r['device']['id']),
-            'raw': r
+            'raw': r,
+            # These will be updated below:
+            'progress': 0.0,
+            'track': None,
+            'album': None,
+            'artist': None,
+            'uri': None,
             }
+          if r['item']:
+            duration_ms = float(r['item']['duration_ms'])
+            progress_ms = float(r['progress_ms'])
+            progress = progress_ms / duration_ms
+            data.update({
+              'progress': progress,
+              'track': track['name'],
+              'album': track['album']['name'],
+              'artist': track['artists'][0]['name'],
+              'uri': track['uri'],
+            })
           cache.set(cache_key, data, 55)
           yield TrackInfo(**data)
-        except Exception:
-          LOG.exception('Cannot query currently playing track')
 
 
 ### MQTT functions

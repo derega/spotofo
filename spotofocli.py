@@ -9,6 +9,16 @@ import click
 import spotofo
 
 
+def print_trackinfo(ti, nl=True):
+  print(ti.username, end=' ')
+  if ti.active_device and ti.track:
+    print('||', ti.track, '||', end=' ')
+    print(ti.artist, '||', end=' ')
+    print(ti.album, ti.progress, end=' ')
+  if nl:
+    print()
+
+
 @click.group()
 @click.option('-c', 'cfn', help='Config file', default=os.path.expanduser('~/.spotofo.conf'))
 @click.pass_context
@@ -20,14 +30,9 @@ def cli(ctx, cfn):
 @click.pass_context
 def currently_playing(ctx):
   """Currently playing tracks for all users"""
-  for ti in spotofo.get_currently_playing_trackinfo(spotofo.get_users()):
-    print(ti.username, end=' ')
-    if ti.active_device:
-      print('||', ti.track, '||', end=' ')
-      print(ti.artist, '||', end=' ')
-      print(ti.album, ti.progress)
-    else:
-      print()
+  users = spotofo.get_users()
+  for ti in spotofo.get_currently_playing_trackinfo(users):
+    print_trackinfo(ti)
 
 
 @cli.command()
@@ -38,14 +43,23 @@ def update_playlist(ctx, topic):
 
   Only add tracks which are not yet in the playlist.
   Only add tracks playing in authorized devices.
-  Send information about added tracks to MQTT topic if configured.
+  Send trackinfo to analytics tracking.
   """
-  tracks, track_uris, added_tracks = _update_shared_playlist()
-  data = [x for x in tracks if x.uri in added_tracks]
-  for ti in tracks:
-    print(ti.is_playing, ti.username, ti.track, ti.artist, ti.album)
-  if len(data):
-    spotofo.mqtt_single(json.dumps(data), topic)
+  active_tracks = []
+  users = spotofo.get_users()
+  for ti in spotofo.get_currently_playing_trackinfo(users):
+    print_trackinfo(ti, nl=False)
+    if ti.is_playing and ti.active_device:
+      spotofo.analyze_play(ti)
+      active_tracks.append(ti)
+      print(True, end=' ')
+    print()
+  active_track_uris = map(lambda x: x.uri, active_tracks)
+  to_be_added_track_uris = spotofo.deduplicate_tracks(active_track_uris)
+  spotofo.add_tracks_to_playlist(to_be_added_track_uris)
+  mqtt_data = [x for x in active_tracks if x.uri in to_be_added_track_uris]
+  if len(mqtt_data):
+    spotofo.mqtt_single(json.dumps(mqtt_data), topic)
 
 
 @cli.command()
@@ -208,16 +222,18 @@ def authorize_playlist(ctx, target):
 
 
 def _update_shared_playlist():
-  tracks = []
+  all_tracks = []
+  active_tracks = []
   users = spotofo.get_users()
   for ti in spotofo.get_currently_playing_trackinfo(users):
-    if spotofo.is_authorized_device(ti.username, ti.device):
+    all_tracks.append(ti)
+    if ti.is_playing and spotofo.is_authorized_device(ti.username, ti.device):
       spotofo.analyze_play(ti)
-      tracks.append(ti)
-  track_uris = map(lambda x: x.uri, tracks)
-  to_be_added_tracks = spotofo.deduplicate_tracks(track_uris)
+      active_tracks.append(ti)
+  active_track_uris = map(lambda x: x.uri, active_tracks)
+  to_be_added_tracks = spotofo.deduplicate_tracks(active_track_uris)
   spotofo.add_tracks_to_playlist(to_be_added_tracks)
-  return (tracks, track_uris, to_be_added_tracks)
+  return (all_tracks, to_be_added_tracks)
 
 
 def _oauth_authorize(username, scope=None, response=None):

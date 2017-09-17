@@ -27,7 +27,7 @@ body { padding-top: 0; }
 {% for ti in currently_playing %}
 <tr>
 <td>{{ ti.username }}</td>
-{% if ti.active_device %}
+{% if ti.active_device and ti.is_playing %}
 <td>{{ ti.track }}</td>
 <td>{{ ti.artist }}</td>
 <td>{{ ti.album }}</td>
@@ -37,7 +37,7 @@ body { padding-top: 0; }
 <td>-</td>
 {% endif %}
 <td style="width: 1em" class="{% if ti.is_playing %}table-success{% else %}table-danger{% endif %}">
-{% if ti.active_device %}<a target="_blank" href="{{ ti.uri }}">{{ ti.progress|progress100|floatformat:"0" }}%</a>{% else %}-{% endif %}
+{% if ti.active_device and ti.is_playing %}<a target="_blank" href="{{ ti.uri }}">{{ ti.progress|progress100|floatformat:"0" }}%</a>{% else %}-{% endif %}
 </td>
 </tr>
 {% empty %}
