@@ -50,6 +50,11 @@ class SpotifyUser(models.Model):
     return self.username
 
 
+class AuthKey(models.Model):
+  authkey = models.CharField(max_length=2048, unique=True)
+  user = models.ForeignKey(DjangoUser, related_name='authkeys', null=False, blank=False)
+
+
 class Play(models.Model):
   user = models.ForeignKey(SpotifyUser, related_name='plays')
   device = models.ForeignKey(Device, related_name='plays')

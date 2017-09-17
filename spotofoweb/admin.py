@@ -108,6 +108,11 @@ class SpotifyUserAdmin(admin.ModelAdmin):
     return instance.playlists.all().count()
 
 
+class AuthKeyAdmin(admin.ModelAdmin):
+  list_display = ('user',)
+  raw_id_fields = ('user',)
+
+
 class MqttTopicAdmin(admin.ModelAdmin):
   list_display = ('topic', 'host', 'port', 'username')
 
@@ -120,6 +125,7 @@ admin.site.register(models.Playlist, PlaylistAdmin)
 admin.site.register(models.Play, PlayAdmin)
 admin.site.register(models.Device, DeviceAdmin)
 admin.site.register(models.SpotifyUser, SpotifyUserAdmin)
+admin.site.register(models.AuthKey, AuthKeyAdmin)
 admin.site.register(models.MqttTopic, MqttTopicAdmin)
 admin.site.register(models.SpotifyUser.playlists.through, UserPlaylistAdmin)
 
