@@ -18,6 +18,14 @@ SPOTOFO_CLIENT_SECRET = os.environ.get('SPOTOFO_CLIENT_SECRET','')
 SPOTOFO_CLIENT_ID = os.environ.get('SPOTOFO_CLIENT_ID','')
 SPOTOFO_REDIRECT_URI = os.environ.get('SPOTOFO_REDIRECT_URI','')
 
+INSTALLED_APPS += (
+  'raven.contrib.django.raven_compat',
+)
+
+RAVEN_CONFIG = {
+  'dsn': os.environ.get('SENTRY_DSN', '')
+}
+
 LOGGING = {
   'version': 1,
   'disable_existing_loggers': True,
