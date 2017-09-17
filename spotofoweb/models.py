@@ -53,7 +53,7 @@ class SpotifyUser(models.Model):
 class Play(models.Model):
   user = models.ForeignKey(SpotifyUser, related_name='plays')
   device = models.ForeignKey(Device, related_name='plays')
-  timestamp = models.IntegerField()
+  timestamp = models.BigIntegerField()
   device_type = models.CharField(max_length=2048)
   playtime = models.DateTimeField(default=timezone.now)
   username = models.CharField(max_length=2048)
