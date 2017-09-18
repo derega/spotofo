@@ -267,9 +267,9 @@ def play_write(trackinfo):
       'device_type': raw['device']['type'],
       'album_uri': raw['item']['album']['uri'],
       'artist_uri': raw['item']['album']['artists'][0]['uri'],
-      'volume_percent': raw['device']['volume_percent'],
+      'volume_percent': raw['device']['volume_percent'] or 0.0,
       'duration_ms': raw['item']['duration_ms'],
-      'popularity': raw['item']['popularity'],
+      'popularity': raw['item']['popularity'] or 0,
       'explicit': raw['item']['explicit'],
       'json_string': json.dumps(raw),
       }
