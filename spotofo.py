@@ -86,7 +86,7 @@ def get_currently_playing_trackinfo(usernames):
         try:
           r = sp._get('me/player')
         except Exception:
-          LOG.warning('Currently playing track query failed', extra={'data': {'username': username}})
+          LOG.debug('Currently playing track query failed', extra={'data': {'username': username}})
         if r:
           track = r['item']
           data = {
