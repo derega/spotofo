@@ -133,7 +133,7 @@ class DeviceSelectView(FormView):
 
 
 class UsernameForm(forms.Form):
-  username = forms.CharField(label='username', max_length=2048)
+  username = forms.CharField(label='Your Spotify username', max_length=2048)
 
 
 class AuthorizeUserView(FormView):
