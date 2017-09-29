@@ -1,0 +1,37 @@
+{% extends "spotofoweb/base.html" %}
+{% load i18n %}{% load bootstrap %}
+
+{% block "title" %}{% trans "Privacy policy" %}{% endblock %}
+
+{% block "content" %}
+<div class="container">
+<div class="row">
+<div class="col">
+<h1>{% trans "Privacy policy" %}</h1>
+{% blocktrans %}
+<p>
+Spotofo knows about you:
+</p>
+<ul>
+<li>Your Spotify profile</li>
+<li>What you are listening now on Spotify</li>
+<li>What devices you have connected on your Spotify account</li>
+</ul>
+<p>
+Spotofo stores all information listed above in a database, and the information is also
+available to other users of the service, and may be made publicly available.
+</p>
+<p>
+Spotofo does not have your password, only your oAuth tokens to Spotify.
+With these tokens Spotofo, or someone who gets access to those tokens, can use
+Spotify API to the extent you have granted access for Spotofo.
+</p>
+<p>
+Spotofo uses cookies to track your open session.
+</p>
+{% endblocktrans %}
+</div>
+</div>
+</div>
+{% endblock %}
+

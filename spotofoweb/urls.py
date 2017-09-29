@@ -2,6 +2,7 @@
 from django.conf.urls import url
 from django.contrib import admin
 from django.contrib.auth.decorators import login_required
+from django.views.generic import TemplateView
 from spotofoweb.views import PlayHistoryView, PlayHistoryCsvView
 from spotofoweb.views import CurrentlyPlayingView
 from spotofoweb.views import DeviceSelectView
@@ -16,5 +17,6 @@ urlpatterns = [
     url(r'^devices$', login_required(DeviceSelectView.as_view())),
     url(r'^authorize$', AuthorizeUserView.as_view()),
     url(r'^authorize/response$', AuthorizeResponseView.as_view()),
+    url(r'^privacy-policy$', TemplateView.as_view(template_name='spotofoweb/privacy-policy.html')),
 ]
 

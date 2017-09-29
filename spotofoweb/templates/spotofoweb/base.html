@@ -34,5 +34,17 @@
     {% block "content" %}{% endblock %}
     </div>
 
+{% if not hide_navigation %}
+<hr />
+<div class="container">
+<div class="row">
+<div class="col">
+  <a href="https://github.com/derega/spotofo">{% trans "Source" %}</a> |
+  <a href="https://haltu.fi">{% trans "Built by Haltu" %}</a> |
+  <a href="/privacy-policy">{% trans "Privacy policy" %}</a>
+</div>
+</div>
+</div>
+{% endif %}
   </body>
 </html>
