@@ -6,6 +6,7 @@ from django.http import HttpResponse
 from django.http import HttpResponseRedirect
 from django.contrib.auth.models import User
 from django.contrib.auth import login as auth_login
+from django.shortcuts import redirect
 from django.views.generic import View, FormView, TemplateView, ListView
 import unicodecsv
 import spotofo
@@ -130,6 +131,16 @@ class DeviceSelectView(FormView):
     context['active_devices'] = self.active_devices
     context['spotifyuser'] = get_spotify_user(self.request)
     return context
+
+
+class DeviceDeleteView(View):
+  def post(self, request, *args, **kwargs):
+    try:
+      device_id = request.POST['delete']
+      spotofo.delete_user_device(request.user.username, device_id)
+    except (KeyError, Device.DoesNotExist):
+      LOG.error('User device remove failed', exc_info=True)
+    return redirect('spotofo.devices.select')
 
 
 class UsernameForm(forms.Form):

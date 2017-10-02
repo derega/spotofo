@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.generic import TemplateView
 from spotofoweb.views import PlayHistoryView, PlayHistoryCsvView
 from spotofoweb.views import CurrentlyPlayingView
-from spotofoweb.views import DeviceSelectView
+from spotofoweb.views import DeviceSelectView, DeviceDeleteView
 from spotofoweb.views import AuthorizeUserView, AuthorizeResponseView
 
 urlpatterns = [
@@ -14,7 +14,8 @@ urlpatterns = [
     url(r'^history$', login_required(PlayHistoryView.as_view())),
     url(r'^history/(?P<page>[0-9]+)$', login_required(PlayHistoryView.as_view())),
     url(r'^history/csv$', login_required(PlayHistoryCsvView.as_view())),
-    url(r'^devices$', login_required(DeviceSelectView.as_view())),
+    url(r'^devices$', login_required(DeviceSelectView.as_view()), name='spotofo.devices.select'),
+    url(r'^devices/delete$', login_required(DeviceDeleteView.as_view()), name='spotofo.devices.delete'),
     url(r'^authorize$', AuthorizeUserView.as_view()),
     url(r'^authorize/response$', AuthorizeResponseView.as_view()),
     url(r'^privacy-policy$', TemplateView.as_view(template_name='spotofoweb/privacy-policy.html')),
