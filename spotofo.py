@@ -173,6 +173,12 @@ def add_user_device(username, device):
   user.devices.add(d)
 
 
+def delete_user_device(username, device_id):
+  d = Device.objects.get(spid=device_id)
+  user = SpotifyUser.objects.get(username=username)
+  user.devices.remove(d)
+
+
 def get_users():
   return [u.username for u in SpotifyUser.objects.all()]
 

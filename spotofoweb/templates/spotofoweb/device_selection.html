@@ -19,14 +19,17 @@ the system your plays are added to the playlist. Your device has to be
 currently playing a song to be available for adding.
 </p>
 {% endblocktrans %}
+<form method="post" action="{% url 'spotofo.devices.delete' %}">
+{% csrf_token %}
 <h2>{% trans "Active devices" %}</h2>
 <ul class="list-group">
 {% for device in active_devices %}
-<li class="list-group-item">{{ device.name }}</li>
+  <li class="list-group-item">{{ device.name }}<button class="btn btn-danger btn-sm float-right" type="submit" name="delete" value="{{ device.spid }}">{% trans "Remove" %}</button></li>
 {% empty %}
 <li class="list-group-item">{% trans "No active devices." %}</li>
 {% endfor %}
 </ul>
+</form>
 </div>
 <div class="col">
 
