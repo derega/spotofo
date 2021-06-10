@@ -8,7 +8,7 @@ setup(
     install_requires=[
         'Click==6.7',
         'spotipy>=2.4.4',
-        'django==1.11',
+        'django==2.2.24',
         'django-bootstrap-form==3.3',
         'unicodecsv==0.14.1',
         'dj-database-url==0.4.2',
